@@ -272,7 +272,7 @@ def init():
         TOKEN = f.readline().split('=')[1].strip()
         CHANNEL_ID = f.readline().split('=')[1].strip()
         f.close()
-    except FileNotFoundError:
+    except FileNotFoundError or IndexError:
         TOKEN = input('Enter bot token to be used: ')
         CHANNEL_ID = input('Enter discord channel id to be used to store files: ')
         f = open('.env', 'w')
