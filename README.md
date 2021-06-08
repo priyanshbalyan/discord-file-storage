@@ -1,5 +1,5 @@
 # Discord Storage
-Utilize Discord servers as cloud storage! [This only works on python 3-3.6.x]
+Utilize Discord servers as cloud storage!
 
 ## Tutorial
 #### Setting up the bot/server
@@ -16,14 +16,14 @@ Replace {CLIENT_ID} with the client ID you copied earlier.
 #### Setting up the program
 Clone the repository.
 ##### 1) Configuration
-Run ```python ds.py``` to begin configuration of the bot. When prompted, copy and paste your **token** from when you created your bot. For the channel ID, copy the channel ID with right click on the channel (developer mode must be enabled under appearance on Discord settings to have the option for Copy ID).
+Run ```python fs.py``` to begin configuration of the bot. When prompted, copy and paste your **token** from when you created your bot. For the channel ID, copy the channel ID with right click on the channel (developer mode must be enabled under appearance on Discord settings to have the option for Copy ID).
 
-*You can delete ```config.discord``` to reconfigure the program.*
+*You can delete ```.env``` to reconfigure the program.*
 #### Commands
-Usage: ```python ds.py [flag] {args}```
+Usage: ```python fs.py [flag] {args}```
 
 ```-upload /full_path/file.exe``` The -upload or -u flag and the full file path uploads a file.
 
-```-download {FILE_CODE}``` The -download or -d flag and the file code will download a file from the discord server. Refer to the ```-list``` command to see uploaded file codes.
+```-download {#ID}``` The -download or -d flag and the file id will download a file from the discord server. Refer to the ```-list``` command to see uploaded file codes.
 
-```-list``` The -list or -l flag will list all the file names/codes/sizes uploaded to the discord server.
+```-list``` The -list or -l flag will list all the file names/sizes/ids uploaded to the discord server.
