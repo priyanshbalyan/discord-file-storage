@@ -3,7 +3,7 @@ Utilize Discord servers as cloud storage!
 
 ## Tutorial
 #### Setting up the bot/server
-
+Install dependencies with ``pip install -r requirements.txt``
 ##### 1) Creating the bot
 In order for this program to work, you're going to need to create a discord bot so we can connect to the discord API. Go to [this](https://discordapp.com/developers/applications/me) link to create a bot. Make sure to create a user bot and ensure the bot is private. **Keep note of the token and the client ID.**
 ##### 2) Setting up the server

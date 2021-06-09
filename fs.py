@@ -285,7 +285,7 @@ def init():
     args = sys.argv
 
     if len(args) == 1:
-        print('Usage: python ds.py [command] (target)')
+        print('Usage: python ' + os.path.basename(__file__) + ' [command] (target)')
         print('COMMANDS:')
         for cmd in commands:
             print('[%s] :: %s' % (', '.join(cmd['alias']), cmd['desc']))
