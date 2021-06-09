@@ -4,7 +4,6 @@ import sys
 import os
 import io
 import random
-import base64
 
 # USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36'
 
@@ -28,7 +27,7 @@ def getSizeFormat(size):
 
 
 def loadFileIndex():
-    response = requests.request('GET', BASE_URL + CHANNEL_ID + '/messages', headers=headers)
+    response = requests.get(BASE_URL + CHANNEL_ID + '/messages', headers=headers)
     if response.status_code != 200:
         print('An error occured while loading index: ', response.status_code, response.text)
         sys.exit()
