@@ -91,14 +91,29 @@ def decode(encoded):
             decoded += i
     return decoded
 
-
 def listFiles(args):
     loadFileIndex()
     fileindex = getFileIndex()
-    print('%-50s   %-9s   %-12s' % ('Filename', 'Size',  'ID'))
-    for i, values in enumerate(fileindex.values()):
-        print('%-50s | %-9s | %-12s' % (decode(values['filename']), getSizeFormat(values['size']), '#' + str(i+1)))
+    
+    terminalsize = os.get_terminal_size()
+    
+    maxwidth = min(120, terminalsize[0]) - 22
+    formatting = '%-' + str(maxwidth) + 's   %-10s   %-5s'
 
+    print(formatting % ('Filename', 'Size',  'ID'))
+    print('-'* maxwidth + '   ' + '-'*9 + '   ' + '-'*5)
+
+    for i, values in enumerate(fileindex.values()):
+        filename = decode(values['filename'])
+        if len(filename) > maxwidth:
+            temp = filename[maxwidth:]
+            print(formatting % (filename[:maxwidth], getSizeFormat(values['size']), '#' + str(i+1)))
+            while temp:
+                print(temp)
+                temp = temp[maxwidth:]
+        else:
+            print(formatting % (filename, getSizeFormat(values['size']), '#' + str(i+1)))
+        
 
 def getTotalChunks(size):
     if size/CHUNK_SIZE > 1:
@@ -136,10 +151,16 @@ def uploadFile(args):
         print(err)
         sys.exit()
     
+    fileindex = getFileIndex()
+
     size = os.path.getsize(args[0])
     filename = os.path.basename(args[0])
     totalchunks = getTotalChunks(size)
     
+    if encode(filename) in fileindex:
+        print('File already uploaded.')
+        sys.exit()
+
     print('File Name: ', filename)
     print('File Size: ', getSizeFormat(size))
     print('Chunks to be created: ', totalchunks)
@@ -147,7 +168,7 @@ def uploadFile(args):
     
     urls = []
     for i in range(totalchunks):
-        print('Progress: %s/%s (%.*f)' % (2, i, totalchunks, (i+1)/totalchunks * 100) + '%')
+        print('Progress: %s/%s (%.*f)' % (i+1, totalchunks, 2, (i+1)/totalchunks * 100) + '%')
         chunk = io.BytesIO(f.read(CHUNK_SIZE)) # Read file in 8MB chunks
         files = [['', [encode(filename) + '.' + str(i), chunk]]]
 
@@ -161,7 +182,6 @@ def uploadFile(args):
 
     print('File uploaded')
 
-    fileindex = getFileIndex()
     fileindex[encode(filename)] = {
         'filename': encode(filename),
         'size': size,
@@ -189,8 +209,8 @@ def downloadFile(args):
 
     for i, values in enumerate(file['urls']):
         messageid, attachmentid = values
-        url = CDN_BASE_URL + attachmentid + '/' + file['filename'] + '.' + str(i)
-        response = requests.get(url)
+        url = CDN_BASE_URL + attachmentid + '/' + file['filename'].replace(' ', '_') + '.' + str(i)
+        response = requests.get(url) #file attachments are public
         if response.status_code != 200:
             print('An error occured while downloading the file:', response.status_code, response.text)
             sys.exit()
@@ -230,6 +250,11 @@ def deleteFile(args):
     del fileindex[file['filename']]
     updateFileIndex(indexmessageid, fileindex)
     print('Deleted ' + decode(file['filename']) + '.')
+
+
+def rename(args):
+    #TODO
+    pass
 
 
 def init():
