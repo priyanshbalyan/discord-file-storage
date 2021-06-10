@@ -106,11 +106,11 @@ def listFiles(args):
     for i, values in enumerate(fileindex.values()):
         filename = decode(values['filename'])
         if len(filename) > maxwidth:
-            temp = filename[maxwidth:]
+            line = filename[maxwidth:]
             print(formatting % (filename[:maxwidth], getSizeFormat(values['size']), '#' + str(i+1)))
-            while temp:
-                print(temp)
-                temp = temp[maxwidth:]
+            while line:
+                print(line[:maxwidth])
+                line = line[maxwidth:]
         else:
             print(formatting % (filename, getSizeFormat(values['size']), '#' + str(i+1)))
         
@@ -250,11 +250,6 @@ def deleteFile(args):
     del fileindex[file['filename']]
     updateFileIndex(indexmessageid, fileindex)
     print('Deleted ' + decode(file['filename']) + '.')
-
-
-def rename(args):
-    #TODO
-    pass
 
 
 def init():
