@@ -168,7 +168,7 @@ def uploadFile(args):
     
     urls = []
     for i in range(totalchunks):
-        print('Progress: %s/%s (%.*f)' % (i+1, totalchunks, 2, (i+1)/totalchunks * 100) + '%')
+        print('Progress: %s/%s (%.*f%)' % (i+1, totalchunks, 2, (i+1)/totalchunks * 100))
         chunk = io.BytesIO(f.read(CHUNK_SIZE)) # Read file in 8MB chunks
         files = [['', [encode(filename) + '.' + str(i), chunk]]]
 
