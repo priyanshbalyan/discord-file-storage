@@ -4,6 +4,7 @@ import sys
 import os
 import io
 import random
+from time import sleep
 
 # USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36'
 
@@ -143,6 +144,17 @@ def updateFileIndex(indexid, fileindex):
     print('Done.')
 
 
+def showProgressBar(iteration, total):
+    decimals = 2
+    length = min(120, os.get_terminal_size()[0]) - 40
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledlength = int(length * (iteration)//total)
+    bar = '#' * filledlength + '-' * (length - filledlength - 1)
+    print(f'\rProgress: {bar} {iteration}/{total} ({percent}%) Complete', end = '')
+    if iteration == total:
+        print()
+
+
 def uploadFile(args):
     messageid = loadFileIndex()
     try:
@@ -168,7 +180,7 @@ def uploadFile(args):
     
     urls = []
     for i in range(totalchunks):
-        print('Progress: %s/%s (%.*f' % (i+1, totalchunks, 2, (i+1)/totalchunks * 100) + '%)')
+        showProgressBar(i+1, totalchunks)
         chunk = io.BytesIO(f.read(CHUNK_SIZE)) # Read file in 8MB chunks
         files = [['', [encode(filename) + '.' + str(i), chunk]]]
 
@@ -214,7 +226,7 @@ def downloadFile(args):
         if response.status_code != 200:
             print('An error occured while downloading the file:', response.status_code, response.text)
             sys.exit()
-        print('Downloading: %.*f' % (2, (i+1)/len(file['urls']) * 100) + '%')
+        showProgressBar(i+1, len(file['urls']))
         f.write(response.content)
 
     f.close()
