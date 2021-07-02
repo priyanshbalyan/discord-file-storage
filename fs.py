@@ -221,7 +221,7 @@ def downloadFile(args):
 
     for i, values in enumerate(file['urls']):
         messageid, attachmentid = values
-        url = CDN_BASE_URL + attachmentid + '/' + file['filename'].replace(' ', '_') + '.' + str(i)
+        url = CDN_BASE_URL + attachmentid + '/' + file['filename'].replace(' ', '_').replace('&','') + '.' + str(i)
         response = requests.get(url) #file attachments are public
         if response.status_code != 200:
             print('An error occured while downloading the file:', response.status_code, response.text)
@@ -314,7 +314,7 @@ def init():
     CDN_BASE_URL = 'https://cdn.discordapp.com/attachments/' + CHANNEL_ID + '/'
 
     args = sys.argv
-
+    print(args)
     if len(args) == 1:
         print('Usage: python ' + os.path.basename(__file__) + ' [command] (target)')
         print('COMMANDS:')
