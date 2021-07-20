@@ -222,7 +222,7 @@ def downloadFile(args):
 
     for i, values in enumerate(file['urls']):
         messageid, attachmentid = values
-        url = CDN_BASE_URL + attachmentid + '/' + re.sub(r' |&|\+', '', file['filename']) + '.' + str(i)
+        url = CDN_BASE_URL + attachmentid + '/' + re.sub(r'&|\+', '', file['filename']).replace(' ', '_') + '.' + str(i)
         response = requests.get(url) #file attachments are public
         if response.status_code != 200:
             print('An error occured while downloading the file:', response.status_code, response.text)
