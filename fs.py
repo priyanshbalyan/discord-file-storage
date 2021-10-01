@@ -19,6 +19,7 @@ INDEX_FILE = 'index.txt'
 CHUNK_SIZE = 8 * 1000 * 1000 # Discord 8MB file limit
 
 
+#Add your discord bot token here
 def getSizeFormat(size):
     unit = ['TB', 'GB', 'MB', 'KB', 'B']
     while size / 1024 > 1:
