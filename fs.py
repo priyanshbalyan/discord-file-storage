@@ -220,10 +220,10 @@ def downloadFile(args):
     filename = decode(file['filename'])
     os.makedirs(os.path.dirname("downloads/" + filename), exist_ok=True)
     f = open('downloads/' + filename, 'wb')
-
+    fileRegex = r'&|\+|\(|\)'
     for i, values in enumerate(file['urls']):
         messageid, attachmentid = values
-        url = CDN_BASE_URL + attachmentid + '/' + re.sub(r'&|\+', '', file['filename']).replace(' ', '_') + '.' + str(i)
+        url = CDN_BASE_URL + attachmentid + '/' + re.sub(fileRegex, '', file['filename']).replace(' ', '_') + '.' + str(i)
         response = requests.get(url) #file attachments are public
         if response.status_code != 200:
             print('An error occured while downloading the file:', response.status_code, response.text)
