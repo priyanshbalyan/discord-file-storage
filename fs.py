@@ -10,6 +10,7 @@ from time import sleep
 # USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36'
 
 CHANNEL_ID = '' # Add your discord channel id here
+ #Add your discord bot token here 
 TOKEN = ''
 CDN_BASE_URL = ''
 headers = {}
