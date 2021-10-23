@@ -257,6 +257,7 @@ def deleteFile(args):
             sys.exit()
         
         showProgressBar(i+1, len(messageids))
+        sleep(1)
 
     del fileindex[file['filename']]
     updateFileIndex(indexmessageid, fileindex)
