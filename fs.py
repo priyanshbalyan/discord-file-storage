@@ -249,19 +249,14 @@ def deleteFile(args):
     file = filelist[index]
     messageids = [i[0] for i in file['urls']]
     print('Deleting...')
-    #bulk delete messages in 200 batches
-    for i in range(0, len(messageids), 100):
-        if len(messageids[i:i+100]) == 1:
-            response = requests.delete(BASE_URL + CHANNEL_ID + '/messages/' + messageids[i], headers=headers)
-        else:
-            deleteHeaders = {'Authorization': 'Bot ' + TOKEN, 'Content-Type': 'application/json' }
-            payload = json.dumps({ 'messages': messageids[i:i+100] })
-            response = requests.post(BASE_URL + CHANNEL_ID + '/messages/bulk-delete', headers=deleteHeaders, data=payload)
-        
+    
+    for i in range(len(messageids)):
+        response = requests.delete(BASE_URL + CHANNEL_ID + '/messages/' + messageids[i], headers=headers)
         if response.status_code != 204:
             print('An error occured while deleting file:', response.status_code, response.text)
             sys.exit()
-        sleep(3)
+        
+        showProgressBar(i+1, len(messageids))
 
     del fileindex[file['filename']]
     updateFileIndex(indexmessageid, fileindex)
