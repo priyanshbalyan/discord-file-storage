@@ -4,12 +4,12 @@ import sys
 import os
 import io
 import re
-import random
 from time import sleep
 
 # USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36'
 
-CHANNEL_ID = '' # Add your discord channel id here
+# Add your discord channel id here
+CHANNEL_ID = ''
  #Add your discord bot token here 
 TOKEN = ''
 CDN_BASE_URL = ''
@@ -33,14 +33,14 @@ def getSizeFormat(size):
 def loadFileIndex():
     response = requests.get(BASE_URL + CHANNEL_ID + '/messages', headers=headers)
     if response.status_code != 200:
-        print('An error occured while loading index: ', response.status_code, response.text)
+        print('An error occurred while loading index: ', response.status_code, response.text)
         sys.exit()
     if len(response.json()) < 1:
         print('No index file found')
         return
 
-    lastMessage = response.json()[0]
-    file = lastMessage['attachments'][0]
+    last_message = response.json()[0]
+    file = last_message['attachments'][0]
     filename = file['filename']
     url = file['url']
 
@@ -54,7 +54,7 @@ def loadFileIndex():
     f.write(response.text)
     f.close()
     
-    return lastMessage['id']
+    return last_message['id']
     
 
 def getFileIndex():
@@ -97,17 +97,17 @@ def decode(encoded):
 
 def listFiles(args):
     loadFileIndex()
-    fileindex = getFileIndex()
+    file_index = getFileIndex()
     
-    terminalsize = os.get_terminal_size()
+    terminal_size = os.get_terminal_size()
     
-    maxwidth = min(120, terminalsize[0]) - 22
+    maxwidth = min(120, terminal_size[0]) - 22
     formatting = '%-' + str(maxwidth) + 's   %-10s   %-5s'
 
     print(formatting % ('Filename', 'Size',  'ID'))
     print('-'* maxwidth + '   ' + '-'*9 + '   ' + '-'*5)
 
-    for i, values in enumerate(fileindex.values()):
+    for i, values in enumerate(file_index.values()):
         filename = decode(values['filename'])
         if len(filename) > maxwidth:
             line = filename[maxwidth:]
@@ -125,25 +125,25 @@ def getTotalChunks(size):
     return 1
 
 
-def updateFileIndex(indexid, fileindex):
+def updateFileIndex(index_id, file_index):
     f = open(INDEX_FILE, 'w')
-    f.write(json.dumps(fileindex))
+    f.write(json.dumps(file_index))
     f.close()
     
     files=[['', [INDEX_FILE, open(INDEX_FILE, 'rb')]]]
     
     # deleting existing index file on the channel
-    if indexid:
+    if index_id:
         print('Deleting old index file')
-        response = requests.delete(BASE_URL + CHANNEL_ID + '/messages/' + indexid, headers=headers)
+        response = requests.delete(BASE_URL + CHANNEL_ID + '/messages/' + index_id, headers=headers)
         if response.status_code != 204:
-            print('An error occured while deleting old index file:', response.status_code, response.text)
+            print('An error occurred while deleting old index file:', response.status_code, response.text)
     
     # Uploading new update index file
     print('Uploading new updated index file')
     response = requests.post(BASE_URL + CHANNEL_ID + '/messages', headers=headers, files=files)
     if response.status_code != 200:
-        print('An error occured while updating index:', response.text)
+        print('An error occurred while updating index:', response.text)
     print('Done.')
 
 
@@ -151,39 +151,39 @@ def showProgressBar(iteration, total):
     decimals = 2
     length = min(120, os.get_terminal_size()[0]) - 40
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledlength = int(length * (iteration)//total)
-    bar = '#' * filledlength + '-' * (length - filledlength - 1)
+    filled_length = int(length * (iteration)//total)
+    bar = '#' * filled_length + '-' * (length - filled_length - 1)
     print(f'\rProgress: {bar} {iteration}/{total} ({percent}%) Complete', end = '')
     if iteration == total:
         print()
 
 
 def uploadFile(args):
-    messageid = loadFileIndex()
+    message_id = loadFileIndex()
     try:
         f = open(args[0], 'rb')
     except FileNotFoundError as err:
         print(err)
         sys.exit()
     
-    fileindex = getFileIndex()
+    file_index = getFileIndex()
 
     size = os.path.getsize(args[0])
     filename = os.path.basename(args[0])
-    totalchunks = getTotalChunks(size)
+    total_chunks = getTotalChunks(size)
     
-    if encode(filename) in fileindex:
+    if encode(filename) in file_index:
         print('File already uploaded.')
         sys.exit()
 
     print('File Name: ', filename)
     print('File Size: ', getSizeFormat(size))
-    print('Chunks to be created: ', totalchunks)
+    print('Chunks to be created: ', total_chunks)
     print('Uploading...')
     
     urls = []
-    for i in range(totalchunks):
-        showProgressBar(i+1, totalchunks)
+    for i in range(total_chunks):
+        showProgressBar(i+1, total_chunks)
         chunk = io.BytesIO(f.read(CHUNK_SIZE)) # Read file in 8MB chunks
         files = [['', [encode(filename) + '.' + str(i), chunk]]]
 
@@ -197,20 +197,20 @@ def uploadFile(args):
 
     print('File uploaded')
 
-    fileindex[encode(filename)] = {
+    file_index[encode(filename)] = {
         'filename': encode(filename),
         'size': size,
         'urls': urls
     }    
-    updateFileIndex(messageid, fileindex)
+    updateFileIndex(message_id, file_index)
     f.close()
 
 
 def downloadFile(args):
     index = (int(args[0][1:]) if args[0][0] == '#' else int(args[0])) - 1
     loadFileIndex()
-    fileindex = getFileIndex()
-    filelist = list(fileindex.values())
+    file_index = getFileIndex()
+    filelist = list(file_index.values())
     if index >= len(filelist):
         print('Invalid ID provided')
         sys.exit()
@@ -221,46 +221,46 @@ def downloadFile(args):
     filename = decode(file['filename'])
     os.makedirs(os.path.dirname("downloads/" + filename), exist_ok=True)
     f = open('downloads/' + filename, 'wb')
-    fileRegex = r'&|\+|\(|\)|\[|\]'
+    file_regex = r'&|\+|\(|\)|\[|\]'
     for i, values in enumerate(file['urls']):
-        messageid, attachmentid = values
-        url = CDN_BASE_URL + attachmentid + '/' + re.sub(fileRegex, '', file['filename']).replace(' ', '_') + '.' + str(i)
-        response = requests.get(url) #file attachments are public
+        message_id, attachment_id = values
+        url = CDN_BASE_URL + attachment_id + '/' + re.sub(file_regex, '', file['filename']).replace(' ', '_') + '.' + str(i)
+        response = requests.get(url) # file attachments are public
         if response.status_code != 200:
-            print('An error occured while downloading the file:', response.status_code, response.text)
+            print('An error occurred while downloading the file:', response.status_code, response.text)
             sys.exit()
         showProgressBar(i+1, len(file['urls']))
         f.write(response.content)
 
     f.close()
-    print('Donwload complete.')
+    print('Download complete.')
 
 
 def deleteFile(args):
     index = (int(args[0][1:]) if args[0][0] == '#' else int(args[0])) - 1
-    indexmessageid = loadFileIndex()
+    index_message_id = loadFileIndex()
     
-    fileindex = getFileIndex()
-    filelist = list(fileindex.values())
-    if index >= len(filelist):
+    file_index = getFileIndex()
+    file_list = list(file_index.values())
+    if index >= len(file_list):
         print('Invalid ID provided')
         sys.exit()
 
-    file = filelist[index]
-    messageids = [i[0] for i in file['urls']]
+    file = file_list[index]
+    message_ids = [i[0] for i in file['urls']]
     print('Deleting...')
     
-    for i in range(len(messageids)):
-        response = requests.delete(BASE_URL + CHANNEL_ID + '/messages/' + messageids[i], headers=headers)
+    for i in range(len(message_ids)):
+        response = requests.delete(BASE_URL + CHANNEL_ID + '/messages/' + message_ids[i], headers=headers)
         if response.status_code != 204:
-            print('An error occured while deleting file:', response.status_code, response.text)
+            print('An error occurred while deleting file:', response.status_code, response.text)
             sys.exit()
         
-        showProgressBar(i+1, len(messageids))
+        showProgressBar(i+1, len(message_ids))
         sleep(1)
 
-    del fileindex[file['filename']]
-    updateFileIndex(indexmessageid, fileindex)
+    del file_index[file['filename']]
+    updateFileIndex(index_message_id, file_index)
     print('Deleted ' + decode(file['filename']) + '.')
 
 
@@ -271,7 +271,7 @@ def init():
             'function': listFiles,
             'minArgs': 0,
             'syntax': '-l',
-            'desc': 'Lists all the file informations that has been uploaded to the server.'
+            'desc': 'Lists all the file information that has been uploaded to the server.'
         },
         {
             'alias': ['-u', '-upload'],
