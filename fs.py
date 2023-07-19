@@ -95,10 +95,8 @@ def decode(encoded):
             decoded += i
     return decoded
 
-def listFiles(args):
-    loadFileIndex()
-    file_index = getFileIndex()
     
+def printTableHeader():
     terminal_size = os.get_terminal_size()
     
     maxwidth = min(120, terminal_size[0]) - 22
@@ -106,18 +104,48 @@ def listFiles(args):
 
     print(formatting % ('Filename', 'Size',  'ID'))
     print('-'* maxwidth + '   ' + '-'*9 + '   ' + '-'*5)
+    return formatting, maxwidth
+
+
+def printTableRow(number, filename, size, formatting, maxwidth):
+    if len(filename) > maxwidth:
+        line = filename[maxwidth:]
+        print(formatting % (filename[:maxwidth], getSizeFormat(size), '#' + str(number)))
+        while line:
+            print(line[:maxwidth])
+            line = line[maxwidth:]
+    else:
+        print(formatting % (filename, getSizeFormat(size), '#' + str(number)))
+
+
+def listFiles(args):
+    loadFileIndex()
+    file_index = getFileIndex()
+    
+    formatting, maxwidth = printTableHeader()
 
     for i, values in enumerate(file_index.values()):
         filename = decode(values['filename'])
-        if len(filename) > maxwidth:
-            line = filename[maxwidth:]
-            print(formatting % (filename[:maxwidth], getSizeFormat(values['size']), '#' + str(i+1)))
-            while line:
-                print(line[:maxwidth])
-                line = line[maxwidth:]
-        else:
-            print(formatting % (filename, getSizeFormat(values['size']), '#' + str(i+1)))
-        
+        printTableRow(i+1, filename, values['size'], formatting, maxwidth)
+
+
+def findFile(args):
+    loadFileIndex()
+    file_index = getFileIndex()
+
+    results = []
+    for i, values in enumerate(file_index.values()):
+        filename = decode(values['filename']).lower()
+        if args[0].lower() in filename:
+            results.append((i+1, filename, values['size']))
+
+    if len(results) > 0:
+        formatting, maxwidth = printTableHeader()
+        for result_num, result_filename, result_size in results:
+            printTableRow(result_num, result_filename, result_size, formatting, maxwidth)
+    else:
+        print("No matching files found in the server.")
+    
 
 def getTotalChunks(size):
     if size/CHUNK_SIZE > 1:
@@ -221,7 +249,7 @@ def downloadFile(args):
     filename = decode(file['filename'])
     os.makedirs(os.path.dirname("downloads/" + filename), exist_ok=True)
     f = open('downloads/' + filename, 'wb')
-    file_regex = r'&|\+|\(|\)|\[|\]'
+    file_regex = r'&|\+|\(|\)|\[|\]|@'
     for i, values in enumerate(file['urls']):
         message_id, attachment_id = values
         url = CDN_BASE_URL + attachment_id + '/' + re.sub(file_regex, '', file['filename']).replace(' ', '_') + '.' + str(i)
@@ -293,6 +321,13 @@ def init():
             'minArgs': 1,
             'syntax': '-del #ID',
             'desc': 'Deletes a file from the server. An #ID is taken in as the file identifier'
+        },
+        {
+            'alias': ['-f', '-find'],
+            'function': findFile,
+            'minArgs': 1,
+            'syntax': '-f text_to_search',
+            'desc': 'Finds files with matching text'
         }
     ]
 
