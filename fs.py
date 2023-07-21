@@ -10,7 +10,7 @@ from time import sleep
 
 # Add your discord channel id here
 CHANNEL_ID = ''
- #Add your discord bot token here 
+# Add your discord bot token here 
 TOKEN = ''
 CDN_BASE_URL = ''
 headers = {}
@@ -20,7 +20,7 @@ INDEX_FILE = 'index.txt'
 CHUNK_SIZE = 8 * 1000 * 1000 # Discord 8MB file limit
 
 
-#Get size unit text from number of bytes
+# Get size unit text from number of bytes
 def getSizeFormat(size):
     unit = ['TB', 'GB', 'MB', 'KB', 'B']
     while size / 1024 > 1:
@@ -136,7 +136,7 @@ def findFile(args):
     results = []
     for i, values in enumerate(file_index.values()):
         filename = decode(values['filename']).lower()
-        if args[0].lower() in filename:
+        if ' '.join(args).lower() in filename:
             results.append((i+1, filename, values['size']))
 
     if len(results) > 0:
@@ -292,6 +292,34 @@ def deleteFile(args):
     print('Deleted ' + decode(file['filename']) + '.')
 
 
+def renameFile(args):
+    message_id = loadFileIndex()
+    file_index = getFileIndex()
+    
+    index = (int(args[0][1:]) if args[0][0] == '#' else int(args[0])) - 1
+    filelist = list(file_index.values())
+    if index >= len(filelist):
+        print('Invalid ID provided')
+        sys.exit()
+
+    file = filelist[index]
+    filename = file['filename']
+    size = file['size']
+    urls = file['urls']
+    print('File details:')
+    print('Name: ', decode(file['filename']))
+    print('Size: ', getSizeFormat(file['size']))
+    rename_text = input("Enter new file name: ")
+    file['filename'] = encode(rename_text)
+    file_index[filename] = {
+        'filename': encode(rename_text),
+        'size': size,
+        'urls': urls
+    }    
+    updateFileIndex(message_id, file_index)
+    print('File renamed')
+
+
 def init():
     commands = [
         {
@@ -328,6 +356,13 @@ def init():
             'minArgs': 1,
             'syntax': '-f text_to_search',
             'desc': 'Finds files with matching text'
+        },
+        {
+            'alias': ['-r', '-rename'],
+            'function': renameFile,
+            'minArgs': 1,
+            'syntax': '-r #ID',
+            'desc': 'Rename a file in the server. An #ID is taken in as the file identifier'
         }
     ]
 
