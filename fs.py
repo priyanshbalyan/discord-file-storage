@@ -238,21 +238,23 @@ def downloadFile(args):
     index = (int(args[0][1:]) if args[0][0] == '#' else int(args[0])) - 1
     loadFileIndex()
     file_index = getFileIndex()
-    filelist = list(file_index.values())
+    filelist = list(file_index.items())
     if index >= len(filelist):
         print('Invalid ID provided')
         sys.exit()
 
     print('Downloading...')
 
-    file = filelist[index]
+    og_name, file = filelist[index]
     filename = decode(file['filename'])
     os.makedirs(os.path.dirname("downloads/" + filename), exist_ok=True)
     f = open('downloads/' + filename, 'wb')
+    
     file_regex = r'&|\+|\(|\)|\[|\]|@'
+
     for i, values in enumerate(file['urls']):
         message_id, attachment_id = values
-        url = CDN_BASE_URL + attachment_id + '/' + re.sub(file_regex, '', file['filename']).replace(' ', '_') + '.' + str(i)
+        url = CDN_BASE_URL + attachment_id + '/' + re.sub(file_regex, '', og_name).replace(' ', '_') + '.' + str(i)
         response = requests.get(url) # file attachments are public
         if response.status_code != 200:
             print('An error occurred while downloading the file:', response.status_code, response.text)
