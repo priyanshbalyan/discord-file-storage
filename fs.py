@@ -250,7 +250,7 @@ def downloadFile(args):
     os.makedirs(os.path.dirname("downloads/" + filename), exist_ok=True)
     f = open('downloads/' + filename, 'wb')
     
-    file_regex = r'&|\+|\(|\)|\[|\]|@'
+    file_regex = r'&|\+|\(|\)|\[|\]|@|\–'
 
     for i, values in enumerate(file['urls']):
         message_id, attachment_id = values
