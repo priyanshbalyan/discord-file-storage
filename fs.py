@@ -278,7 +278,7 @@ def downloadFile(args):
             CDN_BASE_URL
             + attachment_id
             + "/"
-            + re.sub(file_regex, "", og_name).replace(" ", "_")
+            + re.sub(file_regex, "", og_name).replace(" ", "_").replace("__", "_")
             + "."
             + str(i)
         )
