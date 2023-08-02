@@ -1,8 +1,7 @@
 # Discord Storage
 Utilize Discord servers as cloud storage!
 
-![Uploading Screenshot 2023-07-30 at 2.40.01 PM.png…]()
-
+![discord-file-storage](https://github.com/priyanshbalyan/discord-file-storage/assets/22029144/4089ff29-7dc5-429c-9b44-76273c4dc8e6)
 
 ## Tutorial
 #### Setting up the bot/server
