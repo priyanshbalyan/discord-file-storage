@@ -1,6 +1,9 @@
 # Discord Storage
 Utilize Discord servers as cloud storage!
 
+![Uploading Screenshot 2023-07-30 at 2.40.01 PM.png…]()
+
+
 ## Tutorial
 #### Setting up the bot/server
 Install dependencies with ``pip install -r requirements.txt``
