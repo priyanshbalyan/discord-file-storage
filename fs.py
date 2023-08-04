@@ -257,7 +257,7 @@ def uploadFile(args):
 def downloadFile(args):
     indices = []
     for arg in args:
-        indices.append(int(arg[1:]) if arg[0] == "#" else int(arg)) - 1
+        indices.append(int(arg[1:]) if arg[0] == "#" else int(arg) - 1)
 
     loadFileIndex()
     file_index = getFileIndex()
@@ -298,7 +298,8 @@ def downloadFile(args):
             showProgressBar(i + 1, len(file["urls"]))
             f.write(response.content)
 
-    f.close()
+        f.close()
+
     print("Download complete.")
 
 
@@ -381,7 +382,7 @@ def init():
             "function": downloadFile,
             "minArgs": 1,
             "syntax": "-d #ID",
-            "desc": "Downloads a file from the server. An #ID is taken in as the file identifier",
+            "desc": "Downloads a file from the server. An #ID is taken in as the file identifier. Provide multiple ids seperated by space to download multiple files",
         },
         {
             "alias": ["-del", "-delete"],
@@ -445,6 +446,7 @@ def init():
                 print("Syntax: python", sys.argv[0], cmd["syntax"])
                 sys.exit()
             else:
+                print(args)
                 cmd["function"](args[2:])
             break
 
