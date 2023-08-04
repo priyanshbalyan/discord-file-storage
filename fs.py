@@ -31,7 +31,7 @@ def getSizeFormat(size):
 
 
 def loadFileIndex():
-    response = requests.get(BASE_URL + CHANNEL_ID + "/messages", headers=headers)
+    response = requests.get(f"{BASE_URL}{CHANNEL_ID}/messages", headers=headers)
     if response.status_code != 200:
         print(
             "An error occurred while loading index: ",
@@ -103,23 +103,23 @@ def decode(encoded):
 def printTableHeader():
     terminal_size = os.get_terminal_size()
 
-    maxwidth = min(120, terminal_size[0]) - 22
-    formatting = "%-" + str(maxwidth) + "s   %-10s   %-5s"
+    max_width = min(120, terminal_size[0]) - 22
+    formatting = f"%-{str(max_width)}s   %-10s   %-5s"
 
     print(formatting % ("Filename", "Size", "ID"))
-    print("-" * maxwidth + "   " + "-" * 9 + "   " + "-" * 5)
-    return formatting, maxwidth
+    print(f"{'-' * max_width}   {'-' * 9}   {'-' * 5}")
+    return formatting, max_width
 
 
-def printTableRow(number, filename, size, formatting, maxwidth):
-    if len(filename) > maxwidth:
-        line = filename[maxwidth:]
+def printTableRow(number, filename, size, formatting, max_width):
+    if len(filename) > max_width:
+        line = filename[max_width:]
         print(
-            formatting % (filename[:maxwidth], getSizeFormat(size), "#" + str(number))
+            formatting % (filename[:max_width], getSizeFormat(size), "#" + str(number))
         )
         while line:
-            print(line[:maxwidth])
-            line = line[maxwidth:]
+            print(line[:max_width])
+            line = line[max_width:]
     else:
         print(formatting % (filename, getSizeFormat(size), "#" + str(number)))
 
@@ -172,7 +172,7 @@ def updateFileIndex(index_id, file_index):
     if index_id:
         print("Deleting old index file")
         response = requests.delete(
-            BASE_URL + CHANNEL_ID + "/messages/" + index_id, headers=headers
+            f"{BASE_URL}{CHANNEL_ID}/messages/{index_id}", headers=headers
         )
         if response.status_code != 204:
             print(
@@ -184,7 +184,7 @@ def updateFileIndex(index_id, file_index):
     # Uploading new update index file
     print("Uploading new updated index file")
     response = requests.post(
-        BASE_URL + CHANNEL_ID + "/messages", headers=headers, files=files
+        f"{BASE_URL}{CHANNEL_ID}/messages", headers=headers, files=files
     )
     if response.status_code != 200:
         print("An error occurred while updating index:", response.text)
@@ -196,7 +196,7 @@ def showProgressBar(iteration, total):
     length = min(120, os.get_terminal_size()[0]) - 40
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filled_length = int(length * (iteration) // total)
-    bar = "#" * filled_length + "-" * (length - filled_length - 1)
+    bar = f"{'#' * filled_length}{'-' * (length-filled_length - 1)}"
     print(f"\rProgress: {bar} {iteration}/{total} ({percent}%) Complete", end="")
     if iteration == total:
         print()
@@ -232,7 +232,7 @@ def uploadFile(args):
         files = [["", [encode(filename) + "." + str(i), chunk]]]
 
         response = requests.post(
-            BASE_URL + CHANNEL_ID + "/messages", headers=headers, files=files
+            f"{BASE_URL}{CHANNEL_ID}/messages", headers=headers, files=files
         )
         if response.status_code != 200:
             print("Error encountered while uploading file:", response.text)
@@ -255,43 +255,48 @@ def uploadFile(args):
 
 
 def downloadFile(args):
-    index = (int(args[0][1:]) if args[0][0] == "#" else int(args[0])) - 1
+    indices = []
+    for arg in args:
+        indices.append(int(arg[1:]) if arg[0] == "#" else int(arg)) - 1
+
     loadFileIndex()
     file_index = getFileIndex()
     filelist = list(file_index.items())
-    if index >= len(filelist):
-        print("Invalid ID provided")
-        sys.exit()
 
-    print("Downloading...")
-
-    og_name, file = filelist[index]
-    filename = decode(file["filename"])
-    os.makedirs(os.path.dirname("downloads/" + filename), exist_ok=True)
-    f = open("downloads/" + filename, "wb")
-
-    file_regex = r"&|\+|\(|\)|\[|\]|@|\–|'|,"
-
-    for i, values in enumerate(file["urls"]):
-        message_id, attachment_id = values
-        url = (
-            CDN_BASE_URL
-            + attachment_id
-            + "/"
-            + re.sub(file_regex, "", og_name).replace(" ", "_").replace("__", "_")
-            + "."
-            + str(i)
-        )
-        response = requests.get(url)  # file attachments are public
-        if response.status_code != 200:
-            print(
-                "An error occurred while downloading the file:",
-                response.status_code,
-                response.text,
-            )
+    for index in indices:
+        if index >= len(filelist):
+            print(f"Invalid ID provided: {index}")
             sys.exit()
-        showProgressBar(i + 1, len(file["urls"]))
-        f.write(response.content)
+
+        print("Downloading...")
+
+        og_name, file = filelist[index]
+        filename = decode(file["filename"])
+        os.makedirs(os.path.dirname(f"downloads/{filename}"), exist_ok=True)
+        f = open("downloads/" + filename, "wb")
+
+        file_regex = r"&|\+|\(|\)|\[|\]|@|\–|'|,"
+
+        for i, values in enumerate(file["urls"]):
+            message_id, attachment_id = values
+            url = (
+                CDN_BASE_URL
+                + attachment_id
+                + "/"
+                + re.sub(file_regex, "", og_name).replace(" ", "_").replace("__", "_")
+                + "."
+                + str(i)
+            )
+            response = requests.get(url)  # file attachments are public
+            if response.status_code != 200:
+                print(
+                    "An error occurred while downloading the file:",
+                    response.status_code,
+                    response.text,
+                )
+                sys.exit()
+            showProgressBar(i + 1, len(file["urls"]))
+            f.write(response.content)
 
     f.close()
     print("Download complete.")
@@ -313,7 +318,7 @@ def deleteFile(args):
 
     for i in range(len(message_ids)):
         response = requests.delete(
-            BASE_URL + CHANNEL_ID + "/messages/" + message_ids[i], headers=headers
+            f"{BASE_URL}{CHANNEL_ID}/messages/{message_ids[i]}", headers=headers
         )
         if response.status_code != 204:
             print(
@@ -328,7 +333,7 @@ def deleteFile(args):
 
     del file_index[file["filename"]]
     updateFileIndex(index_message_id, file_index)
-    print("Deleted " + decode(file["filename"]) + ".")
+    print(f"Deleted {decode(file['filename'])}.")
 
 
 def renameFile(args):
@@ -412,15 +417,15 @@ def init():
         TOKEN = input("Enter bot token to be used: ")
         CHANNEL_ID = input("Enter discord channel id to be used to store files: ")
         f = open(".env", "w")
-        f.write("TOKEN=" + TOKEN + "\n" + "CHANNEL_ID=" + CHANNEL_ID)
+        f.write(f"TOKEN={TOKEN}\nCHANNEL_ID={CHANNEL_ID}")
         f.close()
 
-    headers = {"Authorization": "Bot " + TOKEN}
-    CDN_BASE_URL = "https://cdn.discordapp.com/attachments/" + CHANNEL_ID + "/"
+    headers = {"Authorization": f"Bot {TOKEN}"}
+    CDN_BASE_URL = f"https://cdn.discordapp.com/attachments/{CHANNEL_ID}/"
 
     args = sys.argv
     if len(args) == 1:
-        print("Usage: python " + os.path.basename(__file__) + " [command] (target)")
+        print(f"Usage: python {os.path.basename(__file__)} [command] (target)")
         print("COMMANDS:")
         for cmd in commands:
             print("[%s] :: %s" % (", ".join(cmd["alias"]), cmd["desc"]))
