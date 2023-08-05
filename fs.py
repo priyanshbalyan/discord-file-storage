@@ -129,10 +129,17 @@ def listFiles(args):
     file_index = getFileIndex()
 
     formatting, maxwidth = printTableHeader()
+    total_size = 0
 
     for i, values in enumerate(file_index.values()):
         filename = decode(values["filename"])
+        total_size += values["size"]
         printTableRow(i + 1, filename, values["size"], formatting, maxwidth)
+
+    terminal_size = os.get_terminal_size()
+    max_width = min(120, terminal_size[0])
+    print("-" * max_width)
+    print(f"Total storage used: {getSizeFormat(total_size)}")
 
 
 def findFile(args):
@@ -263,6 +270,8 @@ def downloadFile(args):
     file_index = getFileIndex()
     filelist = list(file_index.items())
 
+    file_regex = r"[&+()\[\]@–',]"
+
     for index in indices:
         if index >= len(filelist):
             print(f"Invalid ID provided: {index}")
@@ -274,8 +283,6 @@ def downloadFile(args):
         filename = decode(file["filename"])
         os.makedirs(os.path.dirname(f"downloads/{filename}"), exist_ok=True)
         f = open("downloads/" + filename, "wb")
-
-        file_regex = r"&|\+|\(|\)|\[|\]|@|\–|'|,"
 
         for i, values in enumerate(file["urls"]):
             message_id, attachment_id = values
@@ -446,7 +453,6 @@ def init():
                 print("Syntax: python", sys.argv[0], cmd["syntax"])
                 sys.exit()
             else:
-                print(args)
                 cmd["function"](args[2:])
             break
 
