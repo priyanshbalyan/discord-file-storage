@@ -31,7 +31,7 @@ def getSizeFormat(size):
 
 
 def loadFileIndex():
-    response = requests.get(f"{BASE_URL}{CHANNEL_ID}/messages", headers=headers)
+    response = requests.get(f"{BASE_URL}{CHANNEL_ID}/messages?limit=1", headers=headers)
     if response.status_code != 200:
         print(
             "An error occurred while loading index: ",
@@ -289,18 +289,19 @@ def downloadFile(args):
 
             response = requests.get(f"{BASE_URL}{CHANNEL_ID}/messages/{message_id}", headers=headers)
             if response.status_code != 200:
-                print("An error occurred while loading index: ", response.status_code, response.text)
+                print("An error occurred while loading messages: ", response.status_code, response.text)
                 sys.exit()
 
             attachments = response.json()['attachments']
-            proxy_url = attachments[0]['proxy_url']
+            download_url = attachments[0]['url']
 
-            response = requests.get(proxy_url)  # download from proxy url with identification params
-            if response.status_code != 200:
-                print("An error occurred while downloading the file:", response.status_code, response.text)
+            cdnResponse = requests.get(download_url)  # download from url with identification params
+            if cdnResponse.status_code != 200:
+                print("An error occurred while downloading the file:", cdnResponse.status_code, cdnResponse.text)
                 sys.exit()
+
             showProgressBar(i + 1, len(file["urls"]))
-            f.write(response.content)
+            f.write(cdnResponse.content)
 
         f.close()
 
