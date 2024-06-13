@@ -283,24 +283,21 @@ def downloadFile(args):
         filename = decode(file["filename"])
         os.makedirs(os.path.dirname(f"downloads/{filename}"), exist_ok=True)
         f = open("downloads/" + filename, "wb")
-
         for i, values in enumerate(file["urls"]):
+            # TODO: Remove attachment_id from index file
             message_id, attachment_id = values
-            url = (
-                CDN_BASE_URL
-                + attachment_id
-                + "/"
-                + re.sub(file_regex, "", og_name).replace(" ", "_").replace("__", "_")
-                + "."
-                + str(i)
-            )
-            response = requests.get(url)  # file attachments are public
+
+            response = requests.get(f"{BASE_URL}{CHANNEL_ID}/messages/{message_id}", headers=headers)
             if response.status_code != 200:
-                print(
-                    "An error occurred while downloading the file:",
-                    response.status_code,
-                    response.text,
-                )
+                print("An error occurred while loading index: ", response.status_code, response.text)
+                sys.exit()
+
+            attachments = response.json()['attachments']
+            proxy_url = attachments[0]['proxy_url']
+
+            response = requests.get(proxy_url)  # download from proxy url with identification params
+            if response.status_code != 200:
+                print("An error occurred while downloading the file:", response.status_code, response.text)
                 sys.exit()
             showProgressBar(i + 1, len(file["urls"]))
             f.write(response.content)
@@ -389,7 +386,7 @@ def init():
             "function": downloadFile,
             "minArgs": 1,
             "syntax": "-d #ID",
-            "desc": "Downloads a file from the server. An #ID is taken in as the file identifier. Provide multiple ids seperated by space to download multiple files",
+            "desc": "Downloads a file from the server. An #ID is taken in as the file identifier. Provide multiple ids separated by space to download multiple files",
         },
         {
             "alias": ["-del", "-delete"],
