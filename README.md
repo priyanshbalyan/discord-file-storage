@@ -29,3 +29,9 @@ Usage: ```python fs.py [flag] {args}```
 ```-download {#ID}``` The -download or -d flag and the file id will download a file from the discord server. Refer to the ```-list``` command to see uploaded file codes.
 
 ```-list``` The -list or -l flag will list all the file names/sizes/ids uploaded to the discord server.
+
+#### Testing
+Run unit tests with:
+```bash
+python3 -m unittest test.py
+```

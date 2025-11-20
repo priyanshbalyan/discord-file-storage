@@ -3,3 +3,4 @@ index.txt
 downloads/
 *.mp4
 .DS_Store
+__pycache__
