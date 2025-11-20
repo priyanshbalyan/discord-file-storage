@@ -1,5 +1,6 @@
 import sys
 from unittest.mock import MagicMock
+import argparse
 
 # Mock requests module before importing fs
 sys.modules["requests"] = MagicMock()
@@ -89,7 +90,9 @@ class TestFS(unittest.TestCase):
         
         # Run upload
         # Note: upload_file is now in discord_fs.commands.upload
-        commands.upload_file(["test_file.txt"])
+        # Pass argparse.Namespace
+        args = argparse.Namespace(file="test_file.txt")
+        commands.upload_file(args)
         
         # Verify
         self.assertTrue(mock_post.called)

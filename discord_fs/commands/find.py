@@ -2,13 +2,15 @@ from ..utils import decode, print_table_header, print_table_row
 from ..api import load_file_index, get_file_index
 
 def find_file(args):
+    query = " ".join(args.query).lower()
+    
     load_file_index()
     file_index = get_file_index()
 
     results = []
     for i, values in enumerate(file_index.values()):
         filename = decode(values["filename"]).lower()
-        if " ".join(args).lower() in filename:
+        if query in filename:
             results.append((i + 1, filename, values["size"]))
 
     if len(results) > 0:

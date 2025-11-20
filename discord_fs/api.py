@@ -1,19 +1,17 @@
 import requests
 import json
-import sys
 from . import config
+
+class APIError(Exception):
+    pass
 
 def load_file_index():
     # Ensure configuration is loaded
     
     response = requests.get(f"{config.BASE_URL}{config.CHANNEL_ID}/messages?limit=1", headers=config.HEADERS)
     if response.status_code != 200:
-        print(
-            "An error occurred while loading index: ",
-            response.status_code,
-            response.text,
-        )
-        sys.exit()
+        raise APIError(f"An error occurred while loading index: {response.status_code} {response.text}")
+
     if len(response.json()) < 1:
         print("No index file found")
         return
@@ -70,5 +68,5 @@ def update_file_index(index_id, file_index):
         f"{config.BASE_URL}{config.CHANNEL_ID}/messages", headers=config.HEADERS, files=files
     )
     if response.status_code != 200:
-        print("An error occurred while updating index:", response.text)
+        raise APIError(f"An error occurred while updating index: {response.text}")
     print("Done.")

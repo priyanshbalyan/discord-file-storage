@@ -7,23 +7,25 @@ from ..utils import get_size_format, encode, get_total_chunks, show_progress_bar
 from ..api import load_file_index, get_file_index, update_file_index
 
 def upload_file(args):
+    filepath = args.file
+    
     message_id = load_file_index()
     try:
-        f = open(args[0], "rb")
+        f = open(filepath, "rb")
     except FileNotFoundError as err:
         print(err)
-        sys.exit()
+        return
 
     with f:
         file_index = get_file_index()
 
-        size = os.path.getsize(args[0])
-        filename = os.path.basename(args[0])
+        size = os.path.getsize(filepath)
+        filename = os.path.basename(filepath)
         total_chunks = get_total_chunks(size)
 
         if encode(filename) in file_index:
             print("File already uploaded.")
-            sys.exit()
+            return
 
         print("File Name: ", filename)
         print("File Size: ", get_size_format(size))
@@ -41,7 +43,7 @@ def upload_file(args):
             )
             if response.status_code != 200:
                 print("Error encountered while uploading file:", response.text)
-                sys.exit()
+                return
 
             message = response.json()
             urls.append(
