@@ -1,6 +1,6 @@
 import os
 import sys
-import requests
+from ..client import DiscordClient
 from .. import config
 from ..utils import decode, show_progress_bar
 from ..api import load_file_index, get_file_index
@@ -18,6 +18,7 @@ def download_file(args):
     file_index = get_file_index()
     filelist = list(file_index.items())
 
+    client = DiscordClient()
     for index in indices:
         if index >= len(filelist) or index < 0:
             print(f"Invalid ID provided: {index + 1}")
@@ -34,7 +35,7 @@ def download_file(args):
                 for i, values in enumerate(file["urls"]):
                     message_id, attachment_id = values
 
-                    response = requests.get(f"{config.BASE_URL}{config.CHANNEL_ID}/messages/{message_id}", headers=config.HEADERS)
+                    response = client.get_message(message_id)
                     if response.status_code != 200:
                         print("An error occurred while loading messages: ", response.status_code, response.text)
                         return # Stop downloading this file
@@ -42,7 +43,7 @@ def download_file(args):
                     attachments = response.json()['attachments']
                     download_url = attachments[0]['url']
 
-                    cdnResponse = requests.get(download_url)  # download from url with identification params
+                    cdnResponse = client.download_file(download_url)  # download from url with identification params
                     if cdnResponse.status_code != 200:
                         print("An error occurred while downloading the file:", cdnResponse.status_code, cdnResponse.text)
                         return # Stop downloading this file

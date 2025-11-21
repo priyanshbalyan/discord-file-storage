@@ -1,4 +1,4 @@
-import requests
+from .client import DiscordClient
 import json
 from . import config
 
@@ -8,7 +8,8 @@ class APIError(Exception):
 def load_file_index():
     # Ensure configuration is loaded
     
-    response = requests.get(f"{config.BASE_URL}{config.CHANNEL_ID}/messages?limit=1", headers=config.HEADERS)
+    client = DiscordClient()
+    response = client.get_messages(limit=1)
     if response.status_code != 200:
         raise APIError(f"An error occurred while loading index: {response.status_code} {response.text}")
 
@@ -26,7 +27,8 @@ def load_file_index():
         return
 
     with open(config.INDEX_FILE, "w") as f:
-        response = requests.get(url)
+        # client is already initialized above
+        response = client.download_file(url)
         f.write(response.text)
 
     return last_message["id"]
@@ -52,9 +54,8 @@ def update_file_index(index_id, file_index):
     # deleting existing index file on the channel
     if index_id:
         print("Deleting old index file")
-        response = requests.delete(
-            f"{config.BASE_URL}{config.CHANNEL_ID}/messages/{index_id}", headers=config.HEADERS
-        )
+        client = DiscordClient()
+        response = client.delete_message(index_id)
         if response.status_code != 204:
             print(
                 "An error occurred while deleting old index file:",
@@ -64,9 +65,9 @@ def update_file_index(index_id, file_index):
 
     # Uploading new update index file
     print("Uploading new updated index file")
-    response = requests.post(
-        f"{config.BASE_URL}{config.CHANNEL_ID}/messages", headers=config.HEADERS, files=files
-    )
+    # client might not be initialized if index_id was None, so ensure it is
+    client = DiscordClient()
+    response = client.post_message(files=files)
     if response.status_code != 200:
         raise APIError(f"An error occurred while updating index: {response.text}")
     print("Done.")

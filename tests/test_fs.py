@@ -2,8 +2,8 @@ import sys
 from unittest.mock import MagicMock
 import argparse
 
-# Mock requests module before importing fs
-sys.modules["requests"] = MagicMock()
+# Mock httpx module before importing fs
+sys.modules["httpx"] = MagicMock()
 
 import unittest
 from unittest.mock import patch, mock_open
@@ -35,7 +35,7 @@ class TestFS(unittest.TestCase):
         self.assertEqual(utils.get_total_chunks(8 * 1000 * 1000), 1)
         self.assertEqual(utils.get_total_chunks(8 * 1000 * 1000 + 1), 2)
 
-    @patch('discord_fs.api.requests.get')
+    @patch('discord_fs.client.httpx.get')
     @patch('builtins.open', new_callable=mock_open)
     def test_load_file_index_success(self, mock_file, mock_get):
         # Mock response for finding the index file message
@@ -67,7 +67,7 @@ class TestFS(unittest.TestCase):
         self.assertEqual(index, {"test": "data"})
 
     @patch('os.get_terminal_size')
-    @patch('discord_fs.commands.upload.requests.post')
+    @patch('discord_fs.client.httpx.post')
     @patch('discord_fs.commands.upload.load_file_index')
     @patch('discord_fs.commands.upload.get_file_index')
     @patch('discord_fs.commands.upload.update_file_index')

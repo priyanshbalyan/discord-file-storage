@@ -1,7 +1,7 @@
 import os
 import sys
 import io
-import requests
+from ..client import DiscordClient
 from .. import config
 from ..utils import get_size_format, encode, get_total_chunks, show_progress_bar
 from ..api import load_file_index, get_file_index, update_file_index
@@ -38,9 +38,8 @@ def upload_file(args):
             chunk = io.BytesIO(f.read(config.CHUNK_SIZE))  # Read file in 8MB chunks
             files = [["", [encode(filename) + "." + str(i), chunk]]]
 
-            response = requests.post(
-                f"{config.BASE_URL}{config.CHANNEL_ID}/messages", headers=config.HEADERS, files=files
-            )
+            client = DiscordClient()
+            response = client.post_message(files=files)
             if response.status_code != 200:
                 print("Error encountered while uploading file:", response.text)
                 return

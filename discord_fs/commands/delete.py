@@ -1,5 +1,5 @@
 import sys
-import requests
+from ..client import DiscordClient
 from time import sleep
 from .. import config
 from ..utils import decode, show_progress_bar
@@ -31,9 +31,8 @@ def delete_file(args):
         print(f"Deleting {decode(file['filename'])}...")
 
         for i in range(len(message_ids)):
-            response = requests.delete(
-                f"{config.BASE_URL}{config.CHANNEL_ID}/messages/{message_ids[i]}", headers=config.HEADERS
-            )
+            client = DiscordClient()
+            response = client.delete_message(message_ids[i])
             if response.status_code != 204:
                 print(
                     "An error occurred while deleting file:",
