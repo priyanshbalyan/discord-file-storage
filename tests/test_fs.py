@@ -172,5 +172,53 @@ class TestFS(unittest.TestCase):
         with self.assertRaises(httpx.HTTPStatusError):
             client.get_message("123")
 
+    @patch('discord_fs.commands.download.DiscordClient')
+    @patch('discord_fs.commands.download.load_file_index')
+    @patch('discord_fs.commands.download.get_file_index')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.makedirs')
+    def test_download_retry_on_error(self, mock_makedirs, mock_file, mock_get_index, mock_load_index, MockClient):
+        # Setup mocks
+        mock_get_index.return_value = {
+            "test_file": {
+                "filename": utils.encode("test_file.txt"),
+                "urls": [["msg_id", "att_id"]]
+            }
+        }
+        
+        mock_client_instance = MockClient.return_value
+        
+        # Mock get_message response
+        mock_message_response = MagicMock()
+        mock_message_response.status_code = 200
+        mock_message_response.json.return_value = {
+            "attachments": [{"url": "http://new-url.com"}]
+        }
+        mock_client_instance.get_message.return_value = mock_message_response
+        
+        # Mock download_file response
+        # First call raises 404 (or any error), second call succeeds
+        mock_error_response = MagicMock()
+        mock_error_response.status_code = 404
+        mock_error = httpx.HTTPStatusError("404 Not Found", request=None, response=mock_error_response)
+        
+        mock_200_response = MagicMock()
+        mock_200_response.status_code = 200
+        mock_200_response.content = b"file content"
+        
+        mock_client_instance.download_file.side_effect = [mock_error, mock_200_response]
+        
+        # Run download
+        args = argparse.Namespace(id=["1"])
+        commands.download_file(args)
+        
+        # Verify
+        # Should call download_file twice
+        self.assertEqual(mock_client_instance.download_file.call_count, 2)
+        # Should call get_message twice (initial fetch + refresh)
+        self.assertEqual(mock_client_instance.get_message.call_count, 2)
+        # Should write to file
+        mock_file().write.assert_called_with(b"file content")
+
 if __name__ == '__main__':
     unittest.main()

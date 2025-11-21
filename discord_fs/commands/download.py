@@ -49,8 +49,15 @@ def download_file(args: argparse.Namespace) -> None:
                     try:
                         cdnResponse = client.download_file(download_url)  # download from url with identification params
                     except httpx.HTTPStatusError as e:
-                        print(f"An error occurred while downloading the file: {e.response.status_code} {e.response.text}")
-                        return # Stop downloading this file
+                        print(f"Download failed with status {e.response.status_code}. Refreshing link...")
+                        try:
+                            response = client.get_message(message_id)
+                            attachments = response.json()['attachments']
+                            download_url = attachments[0]['url']
+                            cdnResponse = client.download_file(download_url)
+                        except httpx.HTTPStatusError as e2:
+                            print(f"An error occurred while refreshing/downloading the file: {e2.response.status_code} {e2.response.text}")
+                            return
 
                     show_progress_bar(i + 1, len(file["urls"]))
                     f.write(cdnResponse.content)
