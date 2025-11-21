@@ -1,11 +1,12 @@
 import os
 import sys
+import argparse
 from ..client import DiscordClient
 from .. import config
 from ..utils import decode, show_progress_bar
 from ..api import load_file_index, get_file_index
 
-def download_file(args):
+def download_file(args: argparse.Namespace) -> None:
     indices = []
     for arg in args.id:
         try:

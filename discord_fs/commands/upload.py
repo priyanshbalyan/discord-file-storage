@@ -1,12 +1,13 @@
 import os
 import sys
+import argparse
 import io
 from ..client import DiscordClient
 from .. import config
 from ..utils import get_size_format, encode, get_total_chunks, show_progress_bar
 from ..api import load_file_index, get_file_index, update_file_index
 
-def upload_file(args):
+def upload_file(args: argparse.Namespace) -> None:
     filepath = args.file
     
     message_id = load_file_index()

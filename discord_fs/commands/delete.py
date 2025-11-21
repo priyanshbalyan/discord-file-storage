@@ -1,11 +1,12 @@
 import sys
+import argparse
 from ..client import DiscordClient
 from time import sleep
 from .. import config
 from ..utils import decode, show_progress_bar
 from ..api import load_file_index, get_file_index, update_file_index
 
-def delete_file(args):
+def delete_file(args: argparse.Namespace) -> None:
     
     index_message_id = load_file_index()
     if not index_message_id:

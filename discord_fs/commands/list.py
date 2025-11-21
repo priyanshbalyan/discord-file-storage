@@ -1,7 +1,8 @@
+import argparse
 from ..utils import get_size_format, decode, print_table_header, print_table_row, get_terminal_size
 from ..api import load_file_index, get_file_index
 
-def list_files(args):
+def list_files(args: argparse.Namespace) -> None:
     load_file_index()
     file_index = get_file_index()
 

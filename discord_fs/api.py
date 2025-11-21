@@ -1,11 +1,12 @@
 from .client import DiscordClient
+from typing import Any
 import json
 from . import config
 
 class APIError(Exception):
     pass
 
-def load_file_index():
+def load_file_index() -> str | None:
     # Ensure configuration is loaded
     
     client = DiscordClient()
@@ -34,7 +35,7 @@ def load_file_index():
     return last_message["id"]
 
 
-def get_file_index():
+def get_file_index() -> dict[str, Any]:
     try:
         with open(config.INDEX_FILE, "r") as f:
             data = f.read()
@@ -43,7 +44,7 @@ def get_file_index():
         return dict()
 
 
-def update_file_index(index_id, file_index):
+def update_file_index(index_id: str | None, file_index: dict[str, Any]) -> None:
     # Ensure we have latest headers
     
     with open(config.INDEX_FILE, "w") as f:
