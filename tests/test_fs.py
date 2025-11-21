@@ -35,9 +35,9 @@ class TestFS(unittest.TestCase):
         self.assertEqual(utils.get_total_chunks(8 * 1000 * 1000), 1)
         self.assertEqual(utils.get_total_chunks(8 * 1000 * 1000 + 1), 2)
 
-    @patch('discord_fs.client.httpx.get')
+    @patch('discord_fs.client.httpx.request')
     @patch('builtins.open', new_callable=mock_open)
-    def test_load_file_index_success(self, mock_file, mock_get):
+    def test_load_file_index_success(self, mock_file, mock_request):
         # Mock response for finding the index file message
         mock_response_list = MagicMock()
         mock_response_list.status_code = 200
@@ -53,7 +53,7 @@ class TestFS(unittest.TestCase):
         mock_response_file = MagicMock()
         mock_response_file.text = '{"test": "data"}'
         
-        mock_get.side_effect = [mock_response_list, mock_response_file]
+        mock_request.side_effect = [mock_response_list, mock_response_file]
         
         message_id = api.load_file_index()
         
@@ -67,13 +67,13 @@ class TestFS(unittest.TestCase):
         self.assertEqual(index, {"test": "data"})
 
     @patch('os.get_terminal_size')
-    @patch('discord_fs.client.httpx.post')
+    @patch('discord_fs.client.httpx.request')
     @patch('discord_fs.commands.upload.load_file_index')
     @patch('discord_fs.commands.upload.get_file_index')
     @patch('discord_fs.commands.upload.update_file_index')
     @patch('os.path.getsize')
     @patch('builtins.open', new_callable=mock_open, read_data=b'some data')
-    def test_upload_file(self, mock_file, mock_getsize, mock_update, mock_get_index, mock_load, mock_post, mock_terminal_size):
+    def test_upload_file(self, mock_file, mock_getsize, mock_update, mock_get_index, mock_load, mock_request, mock_terminal_size):
         # Setup mocks
         mock_terminal_size.return_value = (80, 24)
         mock_load.return_value = "old_msg_id"
@@ -86,7 +86,7 @@ class TestFS(unittest.TestCase):
             "id": "new_msg_id",
             "attachments": [{"id": "att_id"}]
         }
-        mock_post.return_value = mock_response
+        mock_request.return_value = mock_response
         
         # Run upload
         # Note: upload_file is now in discord_fs.commands.upload
@@ -95,7 +95,7 @@ class TestFS(unittest.TestCase):
         commands.upload_file(args)
         
         # Verify
-        self.assertTrue(mock_post.called)
+        self.assertTrue(mock_request.called)
         self.assertTrue(mock_update.called)
         
         # Check if file index was updated correctly in the call to update_file_index
@@ -104,6 +104,51 @@ class TestFS(unittest.TestCase):
         encoded_name = utils.encode("test_file.txt")
         self.assertIn(encoded_name, updated_index)
         self.assertEqual(updated_index[encoded_name]['size'], 100)
+
+    @patch('discord_fs.client.time.sleep')
+    @patch('discord_fs.client.httpx.request')
+    def test_rate_limit(self, mock_request, mock_sleep):
+        # Mock 429 response followed by 200 response
+        mock_response_429 = MagicMock()
+        mock_response_429.status_code = 429
+        mock_response_429.headers = {"Retry-After": "1.5"}
+        
+        mock_response_200 = MagicMock()
+        mock_response_200.status_code = 200
+        
+        mock_request.side_effect = [mock_response_429, mock_response_200]
+        
+        client = api.DiscordClient()
+        response = client.get_message("123")
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(mock_request.call_count, 2)
+        mock_sleep.assert_called_with(1.5)
+
+    @patch('discord_fs.client.time.sleep')
+    @patch('discord_fs.client.httpx.request')
+    def test_rate_limit_max_retries(self, mock_request, mock_sleep):
+        # Mock 429 response repeatedly
+        mock_response_429 = MagicMock()
+        mock_response_429.status_code = 429
+        mock_response_429.headers = {"Retry-After": "0.1"}
+        
+        mock_request.return_value = mock_response_429
+        
+        client = api.DiscordClient()
+        # Set max_retries via _make_request default or passed arg, 
+        # but since we call get_message which calls _make_request with default, 
+        # we rely on default max_retries=5.
+        # However, get_message doesn't expose max_retries arg. 
+        # So we test _make_request directly or rely on default.
+        # Let's call _make_request directly for precise testing or assume default 5.
+        
+        response = client._make_request("GET", "http://test.com", max_retries=3)
+        
+        self.assertEqual(response.status_code, 429)
+        # Initial call + 3 retries = 4 calls
+        self.assertEqual(mock_request.call_count, 4) 
+        self.assertEqual(mock_sleep.call_count, 3)
 
 if __name__ == '__main__':
     unittest.main()

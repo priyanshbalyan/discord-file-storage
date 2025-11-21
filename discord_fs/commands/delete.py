@@ -1,7 +1,7 @@
 import sys
 import argparse
 from ..client import DiscordClient
-from time import sleep
+
 from .. import config
 from ..utils import decode, show_progress_bar
 from ..api import load_file_index, get_file_index, update_file_index
@@ -43,7 +43,7 @@ def delete_file(args: argparse.Namespace) -> None:
                 break
 
             show_progress_bar(i + 1, len(message_ids))
-            sleep(1)
+
         else:
             # Only execute if loop finished without break
             if file["filename"] in file_index:
