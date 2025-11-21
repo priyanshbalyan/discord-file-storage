@@ -1,5 +1,6 @@
 import sys
 import argparse
+import httpx
 from ..client import DiscordClient
 
 from .. import config
@@ -33,12 +34,13 @@ def delete_file(args: argparse.Namespace) -> None:
 
         for i in range(len(message_ids)):
             client = DiscordClient()
-            response = client.delete_message(message_ids[i])
-            if response.status_code != 204:
+            try:
+                client.delete_message(message_ids[i])
+            except httpx.HTTPStatusError as e:
                 print(
                     "An error occurred while deleting file:",
-                    response.status_code,
-                    response.text,
+                    e.response.status_code,
+                    e.response.text,
                 )
                 break
 

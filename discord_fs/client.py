@@ -21,6 +21,8 @@ class DiscordClient:
                 time.sleep(retry_after)
                 max_retries -= 1
                 continue
+            
+            response.raise_for_status()
             return response
 
     def get_messages(self, limit: int = 1) -> httpx.Response:

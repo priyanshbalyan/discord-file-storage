@@ -1,4 +1,5 @@
 from .client import DiscordClient
+import httpx
 from typing import Any
 import json
 from . import config
@@ -10,9 +11,11 @@ def load_file_index() -> str | None:
     # Ensure configuration is loaded
     
     client = DiscordClient()
-    response = client.get_messages(limit=1)
-    if response.status_code != 200:
-        raise APIError(f"An error occurred while loading index: {response.status_code} {response.text}")
+    client = DiscordClient()
+    try:
+        response = client.get_messages(limit=1)
+    except httpx.HTTPStatusError as e:
+        raise APIError(f"An error occurred while loading index: {e.response.status_code} {e.response.text}")
 
     if len(response.json()) < 1:
         print("No index file found")
@@ -56,19 +59,21 @@ def update_file_index(index_id: str | None, file_index: dict[str, Any]) -> None:
     if index_id:
         print("Deleting old index file")
         client = DiscordClient()
-        response = client.delete_message(index_id)
-        if response.status_code != 204:
+        try:
+            client.delete_message(index_id)
+        except httpx.HTTPStatusError as e:
             print(
                 "An error occurred while deleting old index file:",
-                response.status_code,
-                response.text,
+                e.response.status_code,
+                e.response.text,
             )
 
     # Uploading new update index file
     print("Uploading new updated index file")
     # client might not be initialized if index_id was None, so ensure it is
     client = DiscordClient()
-    response = client.post_message(files=files)
-    if response.status_code != 200:
-        raise APIError(f"An error occurred while updating index: {response.text}")
+    try:
+        client.post_message(files=files)
+    except httpx.HTTPStatusError as e:
+        raise APIError(f"An error occurred while updating index: {e.response.text}")
     print("Done.")

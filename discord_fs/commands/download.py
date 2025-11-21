@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import httpx
 from ..client import DiscordClient
 from .. import config
 from ..utils import decode, show_progress_bar
@@ -33,20 +34,22 @@ def download_file(args: argparse.Namespace) -> None:
         
         try:
             with open("downloads/" + filename, "wb") as f:
-                for i, values in enumerate(file["urls"]):
-                    message_id, attachment_id = values
+                    for i, values in enumerate(file["urls"]):
+                        message_id, attachment_id = values
 
-                    response = client.get_message(message_id)
-                    if response.status_code != 200:
-                        print("An error occurred while loading messages: ", response.status_code, response.text)
-                        return # Stop downloading this file
+                        try:
+                            response = client.get_message(message_id)
+                        except httpx.HTTPStatusError as e:
+                            print(f"An error occurred while loading messages: {e.response.status_code} {e.response.text}")
+                            return # Stop downloading this file
 
                     attachments = response.json()['attachments']
                     download_url = attachments[0]['url']
 
-                    cdnResponse = client.download_file(download_url)  # download from url with identification params
-                    if cdnResponse.status_code != 200:
-                        print("An error occurred while downloading the file:", cdnResponse.status_code, cdnResponse.text)
+                    try:
+                        cdnResponse = client.download_file(download_url)  # download from url with identification params
+                    except httpx.HTTPStatusError as e:
+                        print(f"An error occurred while downloading the file: {e.response.status_code} {e.response.text}")
                         return # Stop downloading this file
 
                     show_progress_bar(i + 1, len(file["urls"]))

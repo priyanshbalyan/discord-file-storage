@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import io
+import httpx
 from ..client import DiscordClient
 from .. import config
 from ..utils import get_size_format, encode, get_total_chunks, show_progress_bar
@@ -40,9 +41,10 @@ def upload_file(args: argparse.Namespace) -> None:
             files = [["", [encode(filename) + "." + str(i), chunk]]]
 
             client = DiscordClient()
-            response = client.post_message(files=files)
-            if response.status_code != 200:
-                print("Error encountered while uploading file:", response.text)
+            try:
+                response = client.post_message(files=files)
+            except httpx.HTTPStatusError as e:
+                print(f"Error encountered while uploading file: {e.response.text}")
                 return
 
             message = response.json()

@@ -3,7 +3,15 @@ from unittest.mock import MagicMock
 import argparse
 
 # Mock httpx module before importing fs
-sys.modules["httpx"] = MagicMock()
+# Mock httpx module before importing fs
+mock_httpx = MagicMock()
+class MockHTTPStatusError(Exception):
+    def __init__(self, message, *, request, response):
+        self.response = response
+        super().__init__(message)
+mock_httpx.HTTPStatusError = MockHTTPStatusError
+sys.modules["httpx"] = mock_httpx
+import httpx
 
 import unittest
 from unittest.mock import patch, mock_open
@@ -149,6 +157,20 @@ class TestFS(unittest.TestCase):
         # Initial call + 3 retries = 4 calls
         self.assertEqual(mock_request.call_count, 4) 
         self.assertEqual(mock_sleep.call_count, 3)
+
+    @patch('discord_fs.client.httpx.request')
+    def test_status_error(self, mock_request):
+        # Mock 404 response
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError("404 Not Found", request=None, response=mock_response)
+        
+        mock_request.return_value = mock_response
+        
+        client = api.DiscordClient()
+        
+        with self.assertRaises(httpx.HTTPStatusError):
+            client.get_message("123")
 
 if __name__ == '__main__':
     unittest.main()
