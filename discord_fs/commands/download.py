@@ -30,10 +30,11 @@ def download_file(args: argparse.Namespace) -> None:
         filename = decode(file["filename"])
         print(f"Downloading {filename}...")
         
-        os.makedirs(os.path.dirname(f"downloads/{filename}"), exist_ok=True)
+        target_path = os.path.abspath(f"downloads/{filename}")
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
         
         try:
-            with open("downloads/" + filename, "wb") as f:
+            with open(target_path, "wb") as f:
                     for i, values in enumerate(file["urls"]):
                         message_id, attachment_id = values
 
@@ -43,26 +44,26 @@ def download_file(args: argparse.Namespace) -> None:
                             print(f"An error occurred while loading messages: {e.response.status_code} {e.response.text}")
                             return # Stop downloading this file
 
-                    attachments = response.json()['attachments']
-                    download_url = attachments[0]['url']
+                        attachments = response.json()['attachments']
+                        download_url = attachments[0]['url']
 
-                    try:
-                        cdnResponse = client.download_file(download_url)  # download from url with identification params
-                    except httpx.HTTPStatusError as e:
-                        print(f"Download failed with status {e.response.status_code}. Refreshing link...")
                         try:
-                            response = client.get_message(message_id)
-                            attachments = response.json()['attachments']
-                            download_url = attachments[0]['url']
-                            cdnResponse = client.download_file(download_url)
-                        except httpx.HTTPStatusError as e2:
-                            print(f"An error occurred while refreshing/downloading the file: {e2.response.status_code} {e2.response.text}")
-                            return
+                            cdnResponse = client.download_file(download_url)  # download from url with identification params
+                        except httpx.HTTPStatusError as e:
+                            print(f"Download failed with status {e.response.status_code}. Refreshing link...")
+                            try:
+                                response = client.get_message(message_id)
+                                attachments = response.json()['attachments']
+                                download_url = attachments[0]['url']
+                                cdnResponse = client.download_file(download_url)
+                            except httpx.HTTPStatusError as e2:
+                                print(f"An error occurred while refreshing/downloading the file: {e2.response.status_code} {e2.response.text}")
+                                return
 
-                    show_progress_bar(i + 1, len(file["urls"]))
-                    f.write(cdnResponse.content)
+                        show_progress_bar(i + 1, len(file["urls"]))
+                        f.write(cdnResponse.content)
+            
+            print(f"Download complete. File saved to: {target_path}")
         except IOError as e:
             print(f"Error writing file {filename}: {e}")
             return
-
-    print("Download complete.")

@@ -220,5 +220,65 @@ class TestFS(unittest.TestCase):
         # Should write to file
         mock_file().write.assert_called_with(b"file content")
 
+    @patch('discord_fs.commands.download.DiscordClient')
+    @patch('discord_fs.commands.download.load_file_index')
+    @patch('discord_fs.commands.download.get_file_index')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.makedirs')
+    def test_download_multi_chunk(self, mock_makedirs, mock_file, mock_get_index, mock_load_index, MockDiscordClient):
+        # Setup mock client
+        client_instance = MockDiscordClient.return_value
+        
+        # Mock get_message responses
+        def get_message_side_effect(message_id):
+            response = MagicMock()
+            response.json.return_value = {
+                'attachments': [{'url': f'http://example.com/{message_id}'}]
+            }
+            return response
+        
+        client_instance.get_message.side_effect = get_message_side_effect
+        
+        # Mock download_file responses
+        def download_file_side_effect(url):
+            response = MagicMock()
+            response.content = f"content_of_{url}".encode('utf-8')
+            return response
+        
+        client_instance.download_file.side_effect = download_file_side_effect
+
+        # Setup mock index
+        mock_get_index.return_value = {
+            "test_file.txt": {
+                "filename": utils.encode("test_file.txt"),
+                "urls": [
+                    ["msg1", "att1"],
+                    ["msg2", "att2"]
+                ]
+            }
+        }
+
+        # Mock args
+        args = argparse.Namespace(id=["1"])
+
+        # Run download
+        commands.download_file(args)
+
+        # Verify calls
+        # We expect client.get_message to be called for BOTH chunks
+        client_instance.get_message.assert_any_call("msg1")
+        client_instance.get_message.assert_any_call("msg2")
+        
+        # We expect client.download_file to be called for BOTH chunks
+        client_instance.download_file.assert_any_call("http://example.com/msg1")
+        client_instance.download_file.assert_any_call("http://example.com/msg2")
+
+        # Verify file writes
+        handle = mock_file()
+        # We expect write to be called twice
+        self.assertEqual(handle.write.call_count, 2)
+        handle.write.assert_any_call(b"content_of_http://example.com/msg1")
+        handle.write.assert_any_call(b"content_of_http://example.com/msg2")
+
 if __name__ == '__main__':
     unittest.main()
