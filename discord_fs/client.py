@@ -17,7 +17,7 @@ class DiscordClient:
                     return response
                 
                 retry_after = float(response.headers.get("Retry-After", 1))
-                print(f"Rate limited. Retrying after {retry_after} seconds...")
+                print(f"\nRate limited. Retrying after {retry_after} seconds...")
                 time.sleep(retry_after)
                 max_retries -= 1
                 continue

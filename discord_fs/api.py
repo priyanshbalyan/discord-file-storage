@@ -53,7 +53,7 @@ def update_file_index(index_id: str | None, file_index: dict[str, Any]) -> None:
     with open(config.INDEX_FILE, "w") as f:
         f.write(json.dumps(file_index))
 
-    files = [["", [config.INDEX_FILE, open(config.INDEX_FILE, "rb")]]]
+    files = [("", (config.INDEX_FILE, open(config.INDEX_FILE, "rb")))]
 
     # deleting existing index file on the channel
     if index_id:

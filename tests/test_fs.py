@@ -112,6 +112,45 @@ class TestFS(unittest.TestCase):
         encoded_name = utils.encode("test_file.txt")
         self.assertIn(encoded_name, updated_index)
         self.assertEqual(updated_index[encoded_name]['size'], 100)
+        
+        # Verify files argument structure
+        # mock_request is called with (method, url, headers=..., files=...)
+        # We want to check the 'files' kwarg of the last call (or any call)
+        _, kwargs = mock_request.call_args
+        files = kwargs.get('files')
+        self.assertIsNotNone(files)
+        self.assertIsInstance(files, list)
+        self.assertTrue(len(files) > 0)
+        # Check that the inner item is a tuple, not a list
+        # files = [("", (filename, chunk))]
+        self.assertIsInstance(files[0], tuple)
+        self.assertEqual(len(files[0]), 2)
+        self.assertIsInstance(files[0][1], tuple)
+
+    @patch('discord_fs.client.httpx.request')
+    @patch('builtins.open', new_callable=mock_open)
+    def test_update_file_index(self, mock_file, mock_request):
+        # Setup mock
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_request.return_value = mock_response
+        
+        # Call update_file_index
+        api.update_file_index(None, {"test": "data"})
+        
+        # Verify files argument structure
+        self.assertTrue(mock_request.called)
+        _, kwargs = mock_request.call_args
+        files = kwargs.get('files')
+        
+        self.assertIsNotNone(files)
+        self.assertIsInstance(files, list)
+        self.assertTrue(len(files) > 0)
+        # Check that the inner item is a tuple, not a list
+        # files = [("", (filename, file_obj))]
+        self.assertIsInstance(files[0], tuple)
+        self.assertEqual(len(files[0]), 2)
+        self.assertIsInstance(files[0][1], tuple)
 
     @patch('discord_fs.client.time.sleep')
     @patch('discord_fs.client.httpx.request')

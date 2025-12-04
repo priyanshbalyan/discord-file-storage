@@ -38,7 +38,7 @@ def upload_file(args: argparse.Namespace) -> None:
         for i in range(total_chunks):
             show_progress_bar(i + 1, total_chunks)
             chunk = io.BytesIO(f.read(config.CHUNK_SIZE))  # Read file in 8MB chunks
-            files = [["", [encode(filename) + "." + str(i), chunk]]]
+            files = [("", (encode(filename) + "." + str(i), chunk))]
 
             client = DiscordClient()
             try:
