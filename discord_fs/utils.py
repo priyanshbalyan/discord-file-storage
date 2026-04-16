@@ -1,5 +1,38 @@
 import os
+import math
+import time
+from typing import Callable, Any, Type, Iterable
 from .config import CHUNK_SIZE
+
+def with_retry(
+    func: Callable,
+    max_retries: int = 2,
+    delay: float = 2.0,
+    exceptions: Iterable[Type[Exception]] = (Exception,),
+    on_retry: Callable[[int, Exception], None] | None = None,
+) -> Any:
+    """
+    Executes a function with a retry mechanism.
+    
+    :param func: The function to execute.
+    :param max_retries: Number of retry attempts.
+    :param delay: Delay between retries in seconds.
+    :param exceptions: Tuple of exceptions to catch and retry on.
+    :param on_retry: Optional callback function called before each retry.
+    """
+    last_exception = None
+    for attempt in range(max_retries + 1):
+        try:
+            return func()
+        except exceptions as e:
+            last_exception = e
+            if attempt < max_retries:
+                if on_retry:
+                    on_retry(attempt + 1, e)
+                time.sleep(delay)
+            else:
+                raise last_exception
+
 
 def get_size_format(size: int) -> str:
     unit = ["TB", "GB", "MB", "KB", "B"]
@@ -65,9 +98,7 @@ def print_table_row(number: int, filename: str, size: int, formatting: str, max_
         print(formatting % (filename, get_size_format(size), "#" + str(number)))
 
 def get_total_chunks(size: int) -> int:
-    if size / CHUNK_SIZE > 1:
-        return size // CHUNK_SIZE + 1
-    return 1
+    return math.ceil(size / CHUNK_SIZE)
 
 def show_progress_bar(iteration: int, total: int) -> None:
     decimals = 2

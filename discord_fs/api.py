@@ -47,17 +47,20 @@ def get_file_index() -> dict[str, Any]:
         return dict()
 
 
-def update_file_index(index_id: str | None, file_index: dict[str, Any]) -> None:
+def save_file_index_locally(file_index: dict[str, Any]) -> None:
+    with open(config.INDEX_FILE, "w") as f:
+        f.write(json.dumps(file_index))
+
+
+def update_file_index(index_id: str | None, file_index: dict[str, Any]) -> str:
     # Ensure we have latest headers
     
     with open(config.INDEX_FILE, "w") as f:
         f.write(json.dumps(file_index))
 
-    files = [("", (config.INDEX_FILE, open(config.INDEX_FILE, "rb")))]
-
     # deleting existing index file on the channel
     if index_id:
-        print("Deleting old index file")
+        print("\nDeleting old index file")
         client = DiscordClient()
         try:
             client.delete_message(index_id)
@@ -69,11 +72,14 @@ def update_file_index(index_id: str | None, file_index: dict[str, Any]) -> None:
             )
 
     # Uploading new update index file
-    print("Uploading new updated index file")
+    print("\nUploading new updated index file")
     # client might not be initialized if index_id was None, so ensure it is
     client = DiscordClient()
     try:
-        client.post_message(files=files)
+        with open(config.INDEX_FILE, "rb") as f:
+            files = [("", (config.INDEX_FILE, f))]
+            response = client.post_message(files=files)
     except httpx.HTTPStatusError as e:
         raise APIError(f"An error occurred while updating index: {e.response.text}")
     print("Done.")
+    return response.json()["id"]

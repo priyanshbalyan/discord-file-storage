@@ -1,17 +1,22 @@
 import sys
 import argparse
 import httpx
+from tqdm import tqdm
 from ..client import DiscordClient
 
 from .. import config
-from ..utils import decode, show_progress_bar
+from ..utils import decode
 from ..api import load_file_index, get_file_index, update_file_index
 
 def delete_file(args: argparse.Namespace) -> None:
     
-    index_message_id = load_file_index()
-    if not index_message_id:
-        print("Could not load file index.")
+    try:
+        index_message_id = load_file_index()
+        if not index_message_id:
+            print("No index file found on server.")
+            return
+    except Exception as e:
+        print(f"Error loading file index: {e}")
         return
 
     file_index = get_file_index()
@@ -32,25 +37,33 @@ def delete_file(args: argparse.Namespace) -> None:
         message_ids = [i[0] for i in file["urls"]]
         print(f"Deleting {decode(file['filename'])}...")
 
-        for i in range(len(message_ids)):
-            client = DiscordClient()
-            try:
-                client.delete_message(message_ids[i])
-            except httpx.HTTPStatusError as e:
-                print(
-                    "An error occurred while deleting file:",
-                    e.response.status_code,
-                    e.response.text,
-                )
-                break
+        pbar = tqdm(total=len(message_ids), desc="Deleting", unit="chunk")
+        try:
+            for i in range(len(message_ids)):
+                client = DiscordClient()
+                try:
+                    client.delete_message(message_ids[i])
+                except httpx.HTTPStatusError as e:
+                    pbar.close()
+                    print(
+                        f"An error occurred while deleting file: {e.response.status_code} {e.response.text}"
+                    )
+                    break
 
-            show_progress_bar(i + 1, len(message_ids))
+                pbar.update(1)
+            else:
+                pbar.close()
+        except Exception as e:
+            pbar.close()
+            print(f"An unexpected error occurred during deletion: {e}")
+            break
 
-        else:
-            # Only execute if loop finished without break
-            if file["filename"] in file_index:
-                del file_index[file["filename"]]
-                print(f"Deleted {decode(file['filename'])}.")
+        # Only delete from index if loop finished without break or if some chunks were deleted 
+        if file["filename"] in file_index:
+            del file_index[file["filename"]]
+            print(f"Deleted {decode(file['filename'])}.")
 
-    update_file_index(index_message_id, file_index)
-
+    try:
+        update_file_index(index_message_id, file_index)
+    except Exception as e:
+        print(f"Error updating file index after deletion: {e}")
