@@ -4,6 +4,8 @@ import argparse
 import httpx
 import io
 import os
+import signal
+import tempfile
 from discord_fs.commands.upload import upload_file
 from discord_fs.utils import encode
 from discord_fs import config
@@ -135,6 +137,49 @@ class TestUploadResumable(unittest.TestCase):
         encoded_name = encode("test.txt")
         self.assertTrue(updated_index[encoded_name]['is_partial'])
         self.assertEqual(updated_index[encoded_name]['urls'], [["msg1", "att1"]])
+
+    def test_upload_real_file_saves_partial_on_interrupt_signal(self):
+        """Test that a real file upload saves partial progress when interrupted."""
+        for interrupt_signal in (signal.SIGINT, signal.SIGTERM):
+            with self.subTest(interrupt_signal=interrupt_signal):
+                temp_path = None
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    temp_path = os.path.join(temp_dir, "real.txt")
+                    with open(temp_path, "wb") as f:
+                        f.write(b"abcdefghij")
+
+                    mock_response_success = MagicMock()
+                    mock_response_success.json.return_value = {"id": "msg1", "attachments": [{"id": "att1"}]}
+                    request_count = {"value": 0}
+
+                    def make_request(*args, **kwargs):
+                        request_count["value"] += 1
+                        if request_count["value"] == 1:
+                            return mock_response_success
+                        signal.raise_signal(interrupt_signal)
+                        raise AssertionError("Signal did not interrupt upload")
+
+                    with (
+                        patch('discord_fs.commands.upload.tqdm'),
+                        patch('discord_fs.commands.upload.DiscordClient') as MockClient,
+                        patch('discord_fs.commands.upload.load_file_index', return_value="old_msg_id"),
+                        patch('discord_fs.commands.upload.get_file_index', return_value={}),
+                        patch('discord_fs.commands.upload.update_file_index') as mock_update,
+                        patch('discord_fs.commands.upload.save_file_index_locally'),
+                        patch('discord_fs.commands.upload.get_total_chunks', return_value=3),
+                        patch.object(config, "CHUNK_SIZE", 4),
+                    ):
+                        MockClient.return_value._make_request.side_effect = make_request
+                        upload_file(argparse.Namespace(file=temp_path))
+
+                    self.assertEqual(request_count["value"], 2)
+                    mock_update.assert_called()
+                    updated_index = mock_update.call_args[0][1]
+                    encoded_name = encode("real.txt")
+                    self.assertTrue(updated_index[encoded_name]["is_partial"])
+                    self.assertEqual(updated_index[encoded_name]["urls"], [["msg1", "att1"]])
+
+                self.assertFalse(os.path.exists(temp_path))
 
     @patch('discord_fs.commands.upload.tqdm')
     @patch('discord_fs.commands.upload.DiscordClient')
