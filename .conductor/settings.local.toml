@@ -1,0 +1,15 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+setup = "mkdir -p .context && python3 -m venv .context/venv && .context/venv/bin/python -m pip install -r requirements.txt pytest"
+archive = "rm -rf .context/venv .pytest_cache && find . -type d -name __pycache__ -prune -exec rm -rf {} +"
+run_mode = "concurrent"
+
+[scripts.run.tests]
+command = ".context/venv/bin/python -m pytest -q"
+icon = "test-tube"
+
+[scripts.run.cli-help]
+command = ".context/venv/bin/python fs.py --help"
+default = true
+icon = "terminal"
