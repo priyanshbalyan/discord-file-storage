@@ -11,31 +11,33 @@ def load_file_index() -> str | None:
     # Ensure configuration is loaded
     
     client = DiscordClient()
-    client = DiscordClient()
     try:
-        response = client.get_messages(limit=1)
+        response = client.get_messages(limit=100)
     except httpx.HTTPStatusError as e:
         raise APIError(f"An error occurred while loading index: {e.response.status_code} {e.response.text}")
 
-    if len(response.json()) < 1:
+    messages = response.json()
+    if len(messages) < 1:
         print("No index file found")
         return
 
-    last_message = response.json()[0]
-    file = last_message["attachments"][0]
-    filename = file["filename"]
-    url = file["url"]
+    for message in messages:
+        for file in message.get("attachments", []):
+            filename = file.get("filename")
+            url = file.get("url")
 
-    if filename != config.INDEX_FILE:
-        print("No index file found")
-        return
+            if filename != config.INDEX_FILE or not url:
+                continue
 
-    with open(config.INDEX_FILE, "w") as f:
-        # client is already initialized above
-        response = client.download_file(url)
-        f.write(response.text)
+            with open(config.INDEX_FILE, "w") as f:
+                # client is already initialized above
+                response = client.download_file(url)
+                f.write(response.text)
 
-    return last_message["id"]
+            return message["id"]
+
+    print("No index file found")
+    return
 
 
 def get_file_index() -> dict[str, Any]:
