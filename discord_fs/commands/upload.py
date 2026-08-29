@@ -37,28 +37,10 @@ def upload_file(args: argparse.Namespace) -> None:
             entry = file_index[encoded_filename]
             if entry.get("is_partial"):
                 print(f"Partial upload detected for {filename} ({len(entry['urls'])}/{total_chunks} chunks).")
-                while True:
-                    choice = input("Do you want to (r)esume or (s)tart over? [r/s]: ").lower()
-                    if choice == 'r':
-                        urls = entry["urls"]
-                        start_chunk = len(urls)
-                        f.seek(start_chunk * config.CHUNK_SIZE)
-                        print(f"Resuming from chunk {start_chunk + 1}...")
-                        break
-                    elif choice == 's':
-                        print("Starting over. Deleting previous chunks...")
-                        client = DiscordClient()
-                        cleanup_pbar = tqdm(total=len(entry["urls"]), desc="Cleaning up", unit="chunk")
-                        for j, (msg_id, _) in enumerate(entry["urls"]):
-                            try:
-                                client.delete_message(msg_id)
-                                cleanup_pbar.update(1)
-                            except Exception as del_err:
-                                cleanup_pbar.write(f"Failed to delete chunk {msg_id}: {del_err}")
-                        cleanup_pbar.close()
-                        print("Cleanup finished. Starting upload...")
-                        urls = [] # Reset urls for fresh upload
-                        break
+                urls = entry["urls"]
+                start_chunk = len(urls)
+                f.seek(start_chunk * config.CHUNK_SIZE)
+                print(f"Resuming from chunk {start_chunk + 1}...")
             else:
                 print("File already uploaded.")
                 return
