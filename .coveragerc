@@ -1,0 +1,7 @@
+[run]
+source = discord_fs
+
+[report]
+fail_under = 80
+show_missing = true
+skip_covered = true

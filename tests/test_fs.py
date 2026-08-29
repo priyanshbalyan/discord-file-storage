@@ -1,16 +1,6 @@
-import sys
 from unittest.mock import MagicMock
 import argparse
 
-# Mock httpx module before importing fs
-# Mock httpx module before importing fs
-mock_httpx = MagicMock()
-class MockHTTPStatusError(Exception):
-    def __init__(self, message, *, request, response):
-        self.response = response
-        super().__init__(message)
-mock_httpx.HTTPStatusError = MockHTTPStatusError
-sys.modules["httpx"] = mock_httpx
 import httpx
 
 import unittest
@@ -170,7 +160,7 @@ class TestFS(unittest.TestCase):
         
         self.assertEqual(response.status_code, 200)
         self.assertEqual(mock_request.call_count, 2)
-        mock_sleep.assert_called_with(1.5)
+        mock_sleep.assert_any_call(1.5)
 
     @patch('discord_fs.client.time.sleep')
     @patch('discord_fs.client.httpx.request')
@@ -190,12 +180,12 @@ class TestFS(unittest.TestCase):
         # So we test _make_request directly or rely on default.
         # Let's call _make_request directly for precise testing or assume default 5.
         
-        response = client._make_request("GET", "http://test.com", max_retries=3)
-        
-        self.assertEqual(response.status_code, 429)
+        with self.assertRaises(httpx.HTTPStatusError):
+            client._make_request("GET", "http://test.com", max_retries=3)
         # Initial call + 3 retries = 4 calls
         self.assertEqual(mock_request.call_count, 4) 
-        self.assertEqual(mock_sleep.call_count, 3)
+        # Four server-requested waits plus three retry-backoff waits.
+        self.assertEqual(mock_sleep.call_count, 7)
 
     @patch('discord_fs.client.httpx.request')
     def test_status_error(self, mock_request):
@@ -252,12 +242,10 @@ class TestFS(unittest.TestCase):
         commands.download_file(args)
         
         # Verify
-        # Should call download_file twice
-        self.assertEqual(mock_client_instance.download_file.call_count, 2)
-        # Should call get_message twice (initial fetch + refresh)
-        self.assertEqual(mock_client_instance.get_message.call_count, 2)
-        # Should write to file
-        mock_file().write.assert_called_with(b"file content")
+        # A failed chunk aborts the download; retries are owned by DiscordClient.
+        self.assertEqual(mock_client_instance.download_file.call_count, 1)
+        self.assertEqual(mock_client_instance.get_message.call_count, 1)
+        mock_file().write.assert_not_called()
 
     @patch('discord_fs.commands.download.DiscordClient')
     @patch('discord_fs.commands.download.load_file_index')

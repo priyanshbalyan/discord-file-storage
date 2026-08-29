@@ -1,5 +1,6 @@
 .env
 index.txt
+.coverage
 downloads/
 *.mp4
 .DS_Store
