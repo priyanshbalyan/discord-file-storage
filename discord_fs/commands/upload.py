@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import io
+import signal
 import httpx
 from tqdm import tqdm
 from ..client import DiscordClient
@@ -56,7 +57,26 @@ def upload_file(args: argparse.Namespace) -> None:
 
         def save_partial_upload() -> None:
             if urls:
+                file_index[encoded_filename] = {
+                    "filename": encoded_filename,
+                    "size": size,
+                    "urls": urls,
+                    "is_partial": True
+                }
+                save_file_index_locally(file_index)
                 update_file_index(message_id, file_index)
+
+        def handle_termination(signum, frame):
+            raise KeyboardInterrupt
+
+        previous_sigterm_handler = None
+        sigterm_handler_installed = False
+        try:
+            previous_sigterm_handler = signal.getsignal(signal.SIGTERM)
+            signal.signal(signal.SIGTERM, handle_termination)
+            sigterm_handler_installed = True
+        except ValueError:
+            pass
 
         try:
             for i in range(start_chunk, total_chunks):
@@ -102,6 +122,17 @@ def upload_file(args: argparse.Namespace) -> None:
                 save_file_index_locally(file_index)
                 pbar.update(1)
 
+            pbar.close()
+            print("File uploaded")
+
+            # Mark as complete and update index on Discord
+            file_index[encoded_filename] = {
+                "filename": encoded_filename,
+                "size": size,
+                "urls": urls,
+            }
+            update_file_index(message_id, file_index)
+
         except KeyboardInterrupt:
             pbar.close()
             print("\nUpload interrupted. Saving partial upload progress...")
@@ -112,14 +143,6 @@ def upload_file(args: argparse.Namespace) -> None:
             print(f"\nAn unexpected error occurred: {e}")
             save_partial_upload()
             return
-
-        pbar.close()
-        print("File uploaded")
-
-        # Mark as complete and update index on Discord
-        file_index[encoded_filename] = {
-            "filename": encoded_filename,
-            "size": size,
-            "urls": urls,
-        }
-        update_file_index(message_id, file_index)
+        finally:
+            if sigterm_handler_installed:
+                signal.signal(signal.SIGTERM, previous_sigterm_handler)
