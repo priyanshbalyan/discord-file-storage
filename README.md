@@ -5,7 +5,6 @@ Utilize Discord servers as cloud storage!
 
 ## Tutorial
 #### Setting up the bot/server
-Install dependencies with ``pip install -r requirements.txt``
 ##### 1) Creating the bot
 In order for this program to work, you're going to need to create a discord bot so we can connect to the discord API. Go to [this](https://discordapp.com/developers/applications/me) link to create a bot. Make sure to create a user bot and ensure the bot is private. **Keep note of the token and the client ID.**
 ##### 2) Setting up the server
@@ -16,13 +15,31 @@ To add the bot to the server (assuming your bot isn't public), go to the followi
 Replace {CLIENT_ID} with the client ID you copied earlier.
 
 #### Setting up the program
-Clone the repository.
+Clone the repository, then create and activate a Python 3 virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+```
+
 ##### 1) Configuration
-Run ```python fs.py``` to begin configuration of the bot. When prompted, copy and paste your **token** from when you created your bot. For the channel ID, copy the channel ID with right click on the channel (developer mode must be enabled under appearance on Discord settings to have the option for Copy ID).
+With the virtual environment activated, run the script to begin configuration of the bot:
+
+```bash
+python3 fs.py
+```
+
+When prompted, copy and paste your **token** from when you created your bot. For the channel ID, copy the channel ID with right click on the channel (developer mode must be enabled under appearance on Discord settings to have the option for Copy ID).
 
 *You can delete ```.env``` to reconfigure the program.*
 #### Commands
-Usage: ```python fs.py [flag] {args}```
+Activate the virtual environment before running commands:
+
+```bash
+source .venv/bin/activate
+python3 fs.py [flag] {args}
+```
 
 ```-upload /full_path/file.exe``` The -upload or -u flag and the full file path uploads a file.
 

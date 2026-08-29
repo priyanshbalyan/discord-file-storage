@@ -11,6 +11,8 @@ def list_files(args: argparse.Namespace) -> None:
 
     for i, values in enumerate(file_index.values()):
         filename = decode(values["filename"])
+        if values.get("is_partial"):
+            filename = f"{filename} (partial)"
         total_size += values["size"]
         print_table_row(i + 1, filename, values["size"], formatting, maxwidth)
 
