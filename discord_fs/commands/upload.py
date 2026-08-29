@@ -54,6 +54,10 @@ def upload_file(args: argparse.Namespace) -> None:
         if start_chunk > 0:
             pbar.update(start_chunk)
 
+        def save_partial_upload() -> None:
+            if urls:
+                update_file_index(message_id, file_index)
+
         try:
             for i in range(start_chunk, total_chunks):
                 chunk = f.read(config.CHUNK_SIZE)
@@ -80,9 +84,7 @@ def upload_file(args: argparse.Namespace) -> None:
                     else:
                         print(f"Error: {e}")
                     
-                    if urls:
-                        # Save partial progress to Discord on error
-                        update_file_index(message_id, file_index)
+                    save_partial_upload()
                     return
 
                 message = response.json()
@@ -100,12 +102,15 @@ def upload_file(args: argparse.Namespace) -> None:
                 save_file_index_locally(file_index)
                 pbar.update(1)
 
+        except KeyboardInterrupt:
+            pbar.close()
+            print("\nUpload interrupted. Saving partial upload progress...")
+            save_partial_upload()
+            return
         except Exception as e:
             pbar.close()
             print(f"\nAn unexpected error occurred: {e}")
-            if urls:
-                # Save partial progress to Discord on error
-                update_file_index(message_id, file_index)
+            save_partial_upload()
             return
 
         pbar.close()

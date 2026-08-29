@@ -111,6 +111,38 @@ class TestUploadResumable(unittest.TestCase):
     @patch('discord_fs.commands.upload.update_file_index')
     @patch('os.path.getsize')
     @patch('builtins.open', new_callable=mock_open, read_data=b'a' * 20000000)
+    def test_upload_saves_partial_on_keyboard_interrupt(self, mock_file, mock_getsize, mock_update, mock_get_index, mock_load, MockClient, mock_tqdm):
+        """Test that Ctrl+C saves partial progress for a later resume."""
+        mock_load.return_value = "old_msg_id"
+        mock_get_index.return_value = {}
+        mock_getsize.return_value = 16000000
+        mock_update.return_value = "new_index_id"
+
+        mock_client_instance = MockClient.return_value
+        mock_response_success = MagicMock()
+        mock_response_success.json.return_value = {"id": "msg1", "attachments": [{"id": "att1"}]}
+        mock_client_instance._make_request.side_effect = [
+            mock_response_success,
+            KeyboardInterrupt(),
+        ]
+
+        args = argparse.Namespace(file="test.txt")
+        upload_file(args)
+
+        self.assertEqual(mock_client_instance._make_request.call_count, 2)
+        mock_update.assert_called()
+        updated_index = mock_update.call_args[0][1]
+        encoded_name = encode("test.txt")
+        self.assertTrue(updated_index[encoded_name]['is_partial'])
+        self.assertEqual(updated_index[encoded_name]['urls'], [["msg1", "att1"]])
+
+    @patch('discord_fs.commands.upload.tqdm')
+    @patch('discord_fs.commands.upload.DiscordClient')
+    @patch('discord_fs.commands.upload.load_file_index')
+    @patch('discord_fs.commands.upload.get_file_index')
+    @patch('discord_fs.commands.upload.update_file_index')
+    @patch('os.path.getsize')
+    @patch('builtins.open', new_callable=mock_open, read_data=b'a' * 20000000)
     def test_upload_same_file_resumes_without_prompt(self, mock_file, mock_getsize, mock_update, mock_get_index, mock_load, MockClient, mock_tqdm):
         """Test that uploading the same partial file resumes instead of starting over."""
         # Setup mocks
