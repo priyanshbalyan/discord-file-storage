@@ -1,5 +1,6 @@
 import argparse
 import os
+import runpy
 import unittest
 from unittest.mock import mock_open, patch
 
@@ -24,6 +25,11 @@ class TestConfig(unittest.TestCase):
         self.assertEqual(config.CHANNEL_ID, "123")
         self.assertEqual(config.HEADERS, {"Authorization": "Bot abc"})
         self.assertTrue(config.CDN_BASE_URL.endswith("/123/"))
+
+    @patch("builtins.open", new_callable=mock_open, read_data="IGNORED=value\n")
+    def test_load_config_ignores_unknown_lines(self, mock_file):
+        config.load_config()
+        self.assertEqual(config.HEADERS, {})
 
     @patch("builtins.open", side_effect=FileNotFoundError)
     def test_load_config_without_file(self, mock_file):
@@ -73,6 +79,28 @@ class TestUtils(unittest.TestCase):
         )
         self.assertEqual(retries, [1])
 
+    @patch("discord_fs.utils.time.sleep")
+    def test_with_retry_without_callback_and_final_failure(self, _sleep):
+        with self.assertRaisesRegex(ValueError, "no"):
+            utils.with_retry(
+                lambda: (_ for _ in ()).throw(ValueError("no")), max_retries=1
+            )
+
+    def test_with_retry_with_negative_retry_count_does_nothing(self):
+        operation = unittest.mock.MagicMock()
+        self.assertIsNone(utils.with_retry(operation, max_retries=-1))
+        operation.assert_not_called()
+
+    @patch("discord_fs.utils.os.get_terminal_size", return_value=os.terminal_size((100, 30)))
+    def test_terminal_size_success(self, _size):
+        self.assertEqual(utils.get_terminal_size().columns, 100)
+
+    @patch("builtins.print")
+    def test_short_table_row_and_incomplete_progress(self, printed):
+        utils.print_table_row(1, "short", 1, "%s %s %s", 10)
+        utils.show_progress_bar(1, 2)
+        self.assertEqual(printed.call_count, 2)
+
 
 class TestMain(unittest.TestCase):
     @patch("discord_fs.main.load_config")
@@ -116,6 +144,34 @@ class TestMain(unittest.TestCase):
     def test_command_errors_are_reported(self, mock_list, mock_load, mock_print):
         main.init()
         mock_print.assert_called_with("An error occurred: boom")
+
+    @patch("discord_fs.main.load_config")
+    @patch.object(config, "TOKEN", "")
+    @patch.object(config, "CHANNEL_ID", "")
+    @patch("builtins.input", side_effect=KeyboardInterrupt)
+    def test_prompt_interrupt_exits_cleanly(self, _input, _load):
+        with self.assertRaises(SystemExit) as raised:
+            main.init()
+        self.assertEqual(raised.exception.code, 0)
+
+    @patch(
+        "discord_fs.main.argparse.ArgumentParser.parse_args",
+        return_value=argparse.Namespace(),
+    )
+    @patch("discord_fs.main.load_config")
+    @patch.object(config, "TOKEN", "token")
+    @patch.object(config, "CHANNEL_ID", "channel")
+    @patch("sys.argv", ["fs.py", "unknown"])
+    def test_without_dispatched_function_prints_help(self, _load, _parse):
+        main.init()
+
+    @patch.object(config, "TOKEN", "token")
+    @patch.object(config, "CHANNEL_ID", "channel")
+    @patch("discord_fs.config.load_config")
+    @patch("sys.argv", ["fs.py"])
+    def test_module_entrypoint(self, _load):
+        with self.assertRaises(SystemExit):
+            runpy.run_module("discord_fs.main", run_name="__main__")
 
 
 if __name__ == "__main__":

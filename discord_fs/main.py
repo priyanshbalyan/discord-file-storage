@@ -76,9 +76,8 @@ def init():
     }
     
     # Preprocess sys.argv to support legacy flags
-    if len(sys.argv) > 1:
-        if sys.argv[1] in legacy_map:
-            sys.argv[1] = legacy_map[sys.argv[1]]
+    if sys.argv[1] in legacy_map:
+        sys.argv[1] = legacy_map[sys.argv[1]]
 
     args = parser.parse_args()
     
