@@ -48,8 +48,11 @@ python3 fs.py [flag] {args}
 ```-list``` The -list or -l flag will list all the file names/sizes/ids uploaded to the discord server.
 
 #### Testing
-Run the test suite with coverage enforcement:
+Install the dependencies, then run the test suite with coverage enforcement:
 ```bash
-python3 -m coverage run -m unittest discover -s tests
+python3 -m pip install -r requirements.txt
+python3 -m coverage run -m unittest discover -s tests && \
 python3 -m coverage report
 ```
+
+The coverage command exits with an error if total coverage is below 90%.
