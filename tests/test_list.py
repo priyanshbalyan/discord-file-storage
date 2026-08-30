@@ -25,6 +25,16 @@ class TestListFiles(unittest.TestCase):
         printed_lines = [call.args[0] for call in mock_print.call_args_list if call.args]
         self.assertTrue(any("test.txt (partial)" in line for line in printed_lines))
 
+    @patch("discord_fs.commands.list.print_table_row")
+    @patch("discord_fs.commands.list.load_file_index")
+    @patch("discord_fs.commands.list.get_file_index")
+    def test_list_keeps_complete_filename_unchanged(self, mock_get_index, _load, row):
+        mock_get_index.return_value = {
+            "name": {"filename": encode("complete.txt"), "size": 1, "urls": []}
+        }
+        list_files(argparse.Namespace())
+        self.assertEqual(row.call_args.args[1], "complete.txt")
+
 
 if __name__ == "__main__":
     unittest.main()
